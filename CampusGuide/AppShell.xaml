@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="CampusGuide.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:CampusGuide"
+    xmlns:home="clr-namespace:CampusGuide.Views.Home"
+    xmlns:map="clr-namespace:CampusGuide.Views.Map"
+    xmlns:search="clr-namespace:CampusGuide.Views.Search"
+    xmlns:notifications="clr-namespace:CampusGuide.Views.Notifications"
+    Title="CampusGuide">
+
+    <TabBar>
+        <ShellContent Title="Home" Icon="home.png" ContentTemplate="{DataTemplate home:HomePage}" Route="home" />
+        <ShellContent Title="Map" Icon="map.png" ContentTemplate="{DataTemplate map:CampusMapPage}" Route="map" />
+        <ShellContent Title="Search" Icon="search.png" ContentTemplate="{DataTemplate search:SearchPage}" Route="search" />
+        <ShellContent Title="Alerts" Icon="alert.png" ContentTemplate="{DataTemplate notifications:NotificationsPage}" Route="alerts" />
+    </TabBar>
+
+    <!-- QR Scanner page -->
+    <ShellContent Route="scanner" ContentTemplate="{DataTemplate home:QRScannerPage}" />
+
+</Shell>
+

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "315494535522",
+    "project_id": "campusguide-d1939",
+    "storage_bucket": "campusguide-d1939.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315494535522:android:30210659448e48e4919c3b",
+        "android_client_info": {
+          "package_name": "com.companyname.campusguide"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAI2w4xEt1N8veN6W-dnlbkj9LtFpAJon8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
