@@ -191,14 +191,37 @@ namespace CampusGuide.Views.Map
             });
             headerLayout.Add(filterButtonsLayout);
 
-            // Building selector
-            var buildingLayout = new VerticalStackLayout
+            // Collapsible details panel (building filter and legends)
+            var detailsLayout = new VerticalStackLayout
             {
                 Spacing = 8,
-                Margin = new Thickness(0, 10, 0, 0)
+                Margin = new Thickness(0, 10, 0, 0),
+                IsVisible = false
             };
 
-            buildingLayout.Add(new Label
+            var toggleDetailsButton = new Button
+            {
+                Text = "Show building filter & legend ▼",
+                BackgroundColor = Colors.Transparent,
+                BorderColor = Colors.White,
+                BorderWidth = 1,
+                TextColor = Colors.White,
+                FontSize = 12,
+                CornerRadius = 8,
+                Margin = new Thickness(0, 10, 0, 0),
+                MinimumHeightRequest = 44
+            };
+            SemanticProperties.SetDescription(toggleDetailsButton, "Show or hide building filter and legend");
+            toggleDetailsButton.Clicked += (s, e) =>
+            {
+                detailsLayout.IsVisible = !detailsLayout.IsVisible;
+                toggleDetailsButton.Text = detailsLayout.IsVisible
+                    ? "Hide building filter & legend ▲"
+                    : "Show building filter & legend ▼";
+            };
+            headerLayout.Add(toggleDetailsButton);
+
+            detailsLayout.Add(new Label
             {
                 Text = "Filter by Building:",
                 FontSize = 12,
@@ -235,8 +258,8 @@ namespace CampusGuide.Views.Map
                 }
             }
 
-            buildingLayout.Add(buildingScrollView);
-            headerLayout.Add(buildingLayout);
+            detailsLayout.Add(buildingScrollView);
+            headerLayout.Add(detailsLayout);
 
             // Pin color legend
             var legendLabel = new Label
@@ -247,7 +270,7 @@ namespace CampusGuide.Views.Map
                 Margin = new Thickness(0, 8, 0, 0),
                 InputTransparent = true  // Don't intercept touches
             };
-            headerLayout.Add(legendLabel);
+            detailsLayout.Add(legendLabel);
 
             // Building legend
             if (_viewModel?.Buildings != null && _viewModel.Buildings.Count > 0)
@@ -265,7 +288,7 @@ namespace CampusGuide.Views.Map
                 var buildingLegendText = "Buildings: " + string.Join(" • ", _viewModel.Buildings.Select(b => $"{b.Emoji} {b.Name}"));
                 buildingLegendLabel.Text = buildingLegendText;
 
-                headerLayout.Add(buildingLegendLabel);
+                detailsLayout.Add(buildingLegendLabel);
             }
 
             mainLayout.Add(headerLayout, 0, 0);
