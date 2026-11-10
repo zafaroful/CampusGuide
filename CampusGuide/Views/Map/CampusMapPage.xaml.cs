@@ -100,7 +100,7 @@ namespace CampusGuide.Views.Map
             var headerLayout = new VerticalStackLayout
             {
                 Padding = 15,
-                BackgroundColor = (Color)Application.Current!.Resources["Primary"],
+                BackgroundColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#00796B") : Color.FromArgb("#00695C"),
                 Spacing = 10
             };
 
@@ -314,7 +314,7 @@ namespace CampusGuide.Views.Map
             var centerButton = new Button
             {
                 Text = "🎯 Center",
-                BackgroundColor = (Color)Application.Current!.Resources["Primary"],
+                BackgroundColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#00796B") : Color.FromArgb("#00695C"),
                 TextColor = Colors.White,
                 CornerRadius = 5,
                 Padding = 10,
@@ -328,7 +328,7 @@ namespace CampusGuide.Views.Map
             var zoomInButton = new Button
             {
                 Text = "🔍+",
-                BackgroundColor = (Color)Application.Current!.Resources["Primary"],
+                BackgroundColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#00796B") : Color.FromArgb("#00695C"),
                 TextColor = Colors.White,
                 CornerRadius = 5,
                 Padding = 10,
@@ -341,7 +341,7 @@ namespace CampusGuide.Views.Map
             var zoomOutButton = new Button
             {
                 Text = "🔍−",
-                BackgroundColor = (Color)Application.Current!.Resources["Primary"],
+                BackgroundColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#00796B") : Color.FromArgb("#00695C"),
                 TextColor = Colors.White,
                 CornerRadius = 5,
                 Padding = 10,
