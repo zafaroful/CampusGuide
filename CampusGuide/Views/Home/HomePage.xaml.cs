@@ -52,10 +52,10 @@ namespace CampusGuide.Views.Home
                     ColumnSpacing = 12,
                     RowSpacing = 12
                 };
-                var mapTile = CreateTile("Map", "Browse buildings", _viewModel.GoToMapCommand);
-                var searchTile = CreateTile("Search", "Find rooms", _viewModel.GoToSearchCommand);
-                var eventsTile = CreateTile("Events", "Campus events", _viewModel.GoToEventsCommand);
-                var favTile = CreateTile("Favorites", "Saved places", _viewModel.GoToFavoritesCommand);
+                var mapTile = CreateTile("\u2316", "Map", "Browse buildings", _viewModel.GoToMapCommand);
+                var searchTile = CreateTile("\u2315", "Search", "Find rooms", _viewModel.GoToSearchCommand);
+                var eventsTile = CreateTile("\u25A6", "Events", "Campus events", _viewModel.GoToEventsCommand);
+                var favTile = CreateTile("\u2605", "Favorites", "Saved places", _viewModel.GoToFavoritesCommand);
                 grid.Add(mapTile, 0, 0);
                 grid.Add(searchTile, 1, 0);
                 grid.Add(eventsTile, 0, 1);
@@ -131,7 +131,7 @@ namespace CampusGuide.Views.Home
             return card;
         }
 
-        private static Border CreateTile(string title, string subtitle, System.Windows.Input.ICommand command)
+        private static Border CreateTile(string icon, string title, string subtitle, System.Windows.Input.ICommand command)
         {
             var tile = new Border
             {
@@ -140,13 +140,22 @@ namespace CampusGuide.Views.Home
                 Stroke = Color.FromArgb("#D0D5E2"),
                 BackgroundColor = Colors.Transparent,
                 MinimumHeightRequest = 48,
-                Content = new VerticalStackLayout
+                Content = new HorizontalStackLayout
                 {
-                    Spacing = 2,
+                    Spacing = 12,
                     Children =
                     {
-                        new Label { Text = title, FontSize = 16, FontAttributes = FontAttributes.Bold },
-                        new Label { Text = subtitle, FontSize = 12, TextColor = Colors.Gray }
+                        new Label { Text = icon, FontSize = 26, TextColor = Color.FromArgb("#3949AB"), VerticalOptions = LayoutOptions.Center },
+                        new VerticalStackLayout
+                        {
+                            Spacing = 2,
+                            VerticalOptions = LayoutOptions.Center,
+                            Children =
+                            {
+                                new Label { Text = title, FontSize = 16, FontAttributes = FontAttributes.Bold },
+                                new Label { Text = subtitle, FontSize = 12, TextColor = Colors.Gray }
+                            }
+                        }
                     }
                 }
             };
