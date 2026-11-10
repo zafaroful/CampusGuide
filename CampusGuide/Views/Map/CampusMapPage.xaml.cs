@@ -193,9 +193,9 @@ namespace CampusGuide.Views.Map
             {
                 Text = "Show building filter & legend ▼",
                 BackgroundColor = Colors.Transparent,
-                BorderColor = Colors.White,
+                BorderColor = (Color)Application.Current!.Resources["HeaderText"],
                 BorderWidth = 1,
-                TextColor = Colors.White,
+                TextColor = (Color)Application.Current!.Resources["HeaderText"],
                 FontSize = 12,
                 CornerRadius = 8,
                 Margin = new Thickness(0, 10, 0, 0),
@@ -214,9 +214,9 @@ namespace CampusGuide.Views.Map
             detailsLayout.Add(new Label
             {
                 Text = "Filter by Building:",
-                FontSize = 12,
+                FontSize = 13,
                 FontAttributes = FontAttributes.Bold,
-                TextColor = Colors.White,
+                TextColor = (Color)Application.Current!.Resources["HeaderText"],
                 InputTransparent = true  // Don't intercept touches
             });
 
@@ -255,8 +255,8 @@ namespace CampusGuide.Views.Map
             var legendLabel = new Label
             {
                 Text = "Pin categories: 🔵 Library • 🟠 Cafeteria • 🟢 Sports • 🟣 Lab • 🔴 Auditorium • 🌸 Health",
-                FontSize = 10,
-                TextColor = Colors.White,
+                FontSize = 12,
+                TextColor = (Color)Application.Current!.Resources["HeaderText"],
                 Margin = new Thickness(0, 8, 0, 0),
                 InputTransparent = true  // Don't intercept touches
             };
@@ -267,8 +267,8 @@ namespace CampusGuide.Views.Map
             {
                 var buildingLegendLabel = new Label
                 {
-                    FontSize = 9,
-                    TextColor = Colors.White,
+                    FontSize = 12,
+                    TextColor = (Color)Application.Current!.Resources["HeaderText"],
                     Margin = new Thickness(0, 8, 0, 0),
                     LineBreakMode = LineBreakMode.WordWrap,
                     InputTransparent = true  // Don't intercept touches
