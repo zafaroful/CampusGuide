@@ -41,4 +41,11 @@
     <SolidColorBrush x:Key="Gray600Brush" Color="{StaticResource Gray600}"/>
     <SolidColorBrush x:Key="Gray900Brush" Color="{StaticResource Gray900}"/>
     <SolidColorBrush x:Key="Gray950Brush" Color="{StaticResource Gray950}"/>
+
+    <Color x:Key="LibraryColor">#0000FF</Color>
+    <Color x:Key="CafeteriaColor">#FF8C00</Color>
+    <Color x:Key="SportsColor">#008000</Color>
+    <Color x:Key="LabColor">#800080</Color>
+    <Color x:Key="AuditoriumColor">#FF0000</Color>
+    <Color x:Key="HealthColor">#FFC0CB</Color>
 </ResourceDictionary>

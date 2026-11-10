@@ -5,6 +5,7 @@ using Microsoft.Maui.Devices.Sensors;
 using CampusGuide.ViewModels.Map;
 using CampusGuide.Services;
 using CampusGuide.Models;
+using CampusGuide.Views.Controls;
 using System.Diagnostics;
 using LocationModel = CampusGuide.Models.Location;
 
@@ -18,6 +19,7 @@ namespace CampusGuide.Views.Map
         private string _currentFilter = "All";
         private Entry? _searchEntry;
         private string? _focusLocationId;
+        private readonly List<(string Type, CategoryChip Chip)> _filterChips = new();
 
         public string? FocusLocationId
         {
@@ -98,7 +100,7 @@ namespace CampusGuide.Views.Map
             var headerLayout = new VerticalStackLayout
             {
                 Padding = 15,
-                BackgroundColor = Color.Parse("#512BD4"),
+                BackgroundColor = (Color)Application.Current!.Resources["Primary"],
                 Spacing = 10
             };
 
@@ -239,7 +241,7 @@ namespace CampusGuide.Views.Map
             // Pin color legend
             var legendLabel = new Label
             {
-                Text = "Pin Colors: 🔵 Library • 🟠 Cafeteria • 🟢 Sports • 🟣 Lab • 🔴 Auditorium • 🌸 Health",
+                Text = "Pin categories: 🔵 Library • 🟠 Cafeteria • 🟢 Sports • 🟣 Lab • 🔴 Auditorium • 🌸 Health",
                 FontSize = 10,
                 TextColor = Colors.White,
                 Margin = new Thickness(0, 8, 0, 0),
@@ -292,14 +294,14 @@ namespace CampusGuide.Views.Map
             {
                 Padding = 10,
                 Spacing = 10,
-                BackgroundColor = Color.Parse("#F5F5F5"),
+                BackgroundColor = (Color)Application.Current!.Resources["Gray100"],
                 HorizontalOptions = LayoutOptions.Fill
             };
 
             var centerButton = new Button
             {
                 Text = "🎯 Center",
-                BackgroundColor = Color.Parse("#512BD4"),
+                BackgroundColor = (Color)Application.Current!.Resources["Primary"],
                 TextColor = Colors.White,
                 CornerRadius = 5,
                 Padding = 10,
@@ -313,7 +315,7 @@ namespace CampusGuide.Views.Map
             var zoomInButton = new Button
             {
                 Text = "🔍+",
-                BackgroundColor = Color.Parse("#512BD4"),
+                BackgroundColor = (Color)Application.Current!.Resources["Primary"],
                 TextColor = Colors.White,
                 CornerRadius = 5,
                 Padding = 10,
@@ -326,7 +328,7 @@ namespace CampusGuide.Views.Map
             var zoomOutButton = new Button
             {
                 Text = "🔍−",
-                BackgroundColor = Color.Parse("#512BD4"),
+                BackgroundColor = (Color)Application.Current!.Resources["Primary"],
                 TextColor = Colors.White,
                 CornerRadius = 5,
                 Padding = 10,
@@ -472,34 +474,38 @@ namespace CampusGuide.Views.Map
             };
         }
 
-        private Button CreateFilterButton(string type)
+        private CategoryChip CreateFilterButton(string type)
         {
-            var button = new Button
-            {
-                Text = type,
-                BackgroundColor = type == "All" ? Colors.White : Color.Parse("#E0E0E0"),
-                TextColor = Colors.Black,
-                FontSize = 12,
-                Padding = 8,
-                CornerRadius = 8,
-                HorizontalOptions = LayoutOptions.Fill
-            };
-
-            SemanticProperties.SetDescription(button, $"Filter locations by {type}");
-            button.Clicked += (s, e) =>
+            var chip = new CategoryChip(type, GetFilterColor(type));
+            chip.IsSelected = type == _currentFilter;
+            chip.Tapped += (s, e) =>
             {
                 _currentFilter = type;
                 FilterLocations(type);
-                UpdateFilterButtonStates(button);
+                UpdateFilterButtonStates();
             };
 
-            return button;
+            _filterChips.Add((type, chip));
+            return chip;
         }
 
-        private void UpdateFilterButtonStates(Button clickedButton)
+        private static Color GetFilterColor(string type) => type switch
         {
-            // This would require tracking all buttons, simplified for now
-            Debug.WriteLine($"Filter changed to: {_currentFilter}");
+            "library" => (Color)Application.Current!.Resources["LibraryColor"],
+            "cafeteria" => (Color)Application.Current!.Resources["CafeteriaColor"],
+            "sports" => (Color)Application.Current!.Resources["SportsColor"],
+            "lab" => (Color)Application.Current!.Resources["LabColor"],
+            "auditorium" => (Color)Application.Current!.Resources["AuditoriumColor"],
+            "health" => (Color)Application.Current!.Resources["HealthColor"],
+            _ => Colors.Gray
+        };
+
+        private void UpdateFilterButtonStates()
+        {
+            foreach (var (type, chip) in _filterChips)
+            {
+                chip.IsSelected = type == _currentFilter;
+            }
         }
 
         private Button CreateBuildingButton(Building? building)
@@ -510,8 +516,8 @@ namespace CampusGuide.Views.Map
             var button = new Button
             {
                 Text = buttonText,
-                BackgroundColor = isSelected ? Colors.White : Color.Parse("#E0E0E0"),
-                TextColor = Colors.Black,
+                BackgroundColor = isSelected ? (Color)Application.Current!.Resources["Gray950"] : (Color)Application.Current!.Resources["Gray100"],
+                TextColor = isSelected ? Colors.White : (Color)Application.Current!.Resources["Gray950"],
                 FontSize = 11,
                 Padding = 10,
                 CornerRadius = 8,
