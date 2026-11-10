@@ -1,102 +1,393 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json.Nodes;
+using System.Threading;
 using System.Threading.Tasks;
 using CampusGuide.Models;
 using LocationModel = CampusGuide.Models.Location;
 
 #if ANDROID
-using Firebase.Firestore;
 using Android.Util;
-using Android.Gms.Tasks;
 #endif
 
 namespace CampusGuide.Services
 {
-#if ANDROID
     /// <summary>
-    /// Android-specific Firestore implementation using Xamarin.Firebase.Firestore bindings.
+    /// Firestore implementation using the Firestore REST API (no native Firebase bindings).
     /// Maps Firestore collections (locations, events, notifications) to CampusGuide models.
-    /// Uses lazy initialization to ensure Firebase is initialized before accessing Firestore.Instance
     /// </summary>
     public class FirebaseFirestoreService : IFirestoreService
     {
         const string TAG = "FirebaseFirestoreService";
+        const string ProjectId = "campusguide-d1939";
+        const string ApiKey = "AIzaSyAI2w4xEt1N8veN6W-dnlbkj9LtFpAJon8";
         const string LocationsCollection = "locations";
         const string EventsCollection = "events";
         const string NotificationsCollection = "notifications";
 
-        private FirebaseFirestore? _db;
-        private readonly object _dbLock = new object();
+        const string DocumentsRoot = $"https://firestore.googleapis.com/v1/projects/{ProjectId}/databases/(default)/documents";
 
-        /// <summary>
-        /// Gets the Firestore instance with lazy initialization.
-        /// This ensures Firebase is fully initialized before we try to access Firestore.Instance
-        /// </summary>
-        private FirebaseFirestore GetFirestoreInstance()
+        const string AuthSignUpUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=";
+
+        static readonly HttpClient Http = new();
+        static readonly SemaphoreSlim AuthLock = new(1, 1);
+        static string? idToken;
+        static DateTime idTokenExpiresUtc;
+
+        static async Task<string> GetIdTokenAsync()
         {
-            if (_db == null)
+            if (idToken != null && DateTime.UtcNow < idTokenExpiresUtc)
+                return idToken;
+
+            await AuthLock.WaitAsync().ConfigureAwait(false);
+            try
             {
-                lock (_dbLock)
+                if (idToken != null && DateTime.UtcNow < idTokenExpiresUtc)
+                    return idToken;
+
+                var body = new JsonObject { ["returnSecureToken"] = true };
+                using var request = new HttpRequestMessage(HttpMethod.Post, AuthSignUpUrl + ApiKey)
                 {
-                    if (_db == null)
-                    {
-                        try
-                        {
-                            _db = FirebaseFirestore.Instance;
-                            Log.Debug(TAG, "Firestore instance obtained successfully");
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error(TAG, $"Failed to get Firestore instance: {ex.Message}");
-                            throw;
-                        }
-                    }
-                }
+                    Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json")
+                };
+
+                using var response = await Http.SendAsync(request).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                    throw new HttpRequestException($"Firebase anonymous sign-in failed: {(int)response.StatusCode} {content}");
+
+                var json = JsonNode.Parse(content)!;
+                idToken = json["idToken"]!.GetValue<string>();
+                var expiresIn = int.Parse(json["expiresIn"]!.GetValue<string>());
+                idTokenExpiresUtc = DateTime.UtcNow.AddSeconds(expiresIn - 60);
+                return idToken;
             }
-            return _db;
+            finally
+            {
+                AuthLock.Release();
+            }
         }
 
-        public FirebaseFirestoreService()
+        static async Task AddAuthorizationAsync(HttpRequestMessage request)
         {
-            // Firestore initialization is deferred until first use (lazy initialization)
-            // This allows Firebase.FirebaseApp.InitializeApp() in MainActivity to complete first
-            Log.Debug(TAG, "FirebaseFirestoreService created (lazy initialization)");
+            var token = await GetIdTokenAsync().ConfigureAwait(false);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        static void LogError(string message)
+        {
+#if ANDROID
+            Log.Error(TAG, message);
+#endif
+        }
+
+        static void LogDebug(string message)
+        {
+#if ANDROID
+            Log.Debug(TAG, message);
+#endif
+        }
+
+        static async Task<JsonNode?> SendAsync(HttpMethod method, string path, JsonObject? body = null)
+        {
+            using var request = new HttpRequestMessage(method, $"{DocumentsRoot}/{path}");
+            if (body != null)
+            {
+                request.Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json");
+            }
+            await AddAuthorizationAsync(request).ConfigureAwait(false);
+
+            using var response = await Http.SendAsync(request).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return null;
+
+            if (!response.IsSuccessStatusCode)
+                throw new HttpRequestException($"Firestore {method} {path} failed: {(int)response.StatusCode} {content}");
+
+            return string.IsNullOrWhiteSpace(content) ? null : JsonNode.Parse(content);
+        }
+
+        static async Task<List<JsonNode>> QueryCollectionAsync(string collection, JsonObject? where = null)
+        {
+            var results = new List<JsonNode>();
+            var query = new JsonObject
+            {
+                ["parent"] = $"projects/{ProjectId}/databases/(default)/documents",
+                ["structuredQuery"] = new JsonObject
+                {
+                    ["from"] = new JsonArray(new JsonObject { ["collectionId"] = collection }),
+                }
+            };
+            if (where != null)
+                query["structuredQuery"]!["where"] = where;
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{DocumentsRoot}:runQuery")
+            {
+                Content = new StringContent(query.ToJsonString(), Encoding.UTF8, "application/json")
+            };
+            await AddAuthorizationAsync(request).ConfigureAwait(false);
+
+            using var response = await Http.SendAsync(request).ConfigureAwait(false);
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+                throw new HttpRequestException($"Firestore query on '{collection}' failed: {(int)response.StatusCode} {content}");
+
+            if (JsonNode.Parse(content) is JsonArray rows)
+            {
+                foreach (var row in rows)
+                {
+                    if (row?["document"] is JsonNode document)
+                        results.Add(document);
+                }
+            }
+            return results;
+        }
+
+        static string DocumentIdOf(JsonNode document)
+        {
+            var name = document["name"]?.GetValue<string>() ?? string.Empty;
+            return name.Substring(name.LastIndexOf('/') + 1);
+        }
+
+        static JsonObject PublishedFilter() => new()
+        {
+            ["fieldFilter"] = new JsonObject
+            {
+                ["field"] = new JsonObject { ["fieldPath"] = "isPublished" },
+                ["op"] = "EQUAL",
+                ["value"] = new JsonObject { ["booleanValue"] = true }
+            }
+        };
+
+        static string? GetString(JsonNode? fields, string key)
+        {
+            var value = fields?[key];
+            return value?["stringValue"]?.GetValue<string>();
+        }
+
+        static bool GetBool(JsonNode? fields, string key)
+        {
+            return fields?[key]?["booleanValue"]?.GetValue<bool>() ?? false;
+        }
+
+        static DateTime? GetTimestamp(JsonNode? fields, string key)
+        {
+            var text = fields?[key]?["timestampValue"]?.GetValue<string>();
+            if (text == null)
+                return null;
+            return DateTime.Parse(text, null, System.Globalization.DateTimeStyles.RoundtripKind).ToLocalTime();
+        }
+
+        static Coordinates? GetCoordinates(JsonNode? fields)
+        {
+            var map = fields?["coordinates"]?["mapValue"]?["fields"];
+            if (map == null)
+                return null;
+            return new Coordinates
+            {
+                Latitude = GetDouble(map, "latitude"),
+                Longitude = GetDouble(map, "longitude"),
+            };
+        }
+
+        static double GetDouble(JsonNode? fields, string key)
+        {
+            var value = fields?[key];
+            if (value?["doubleValue"] is JsonNode d)
+                return d.GetValue<double>();
+            if (value?["integerValue"] is JsonNode i)
+                return double.Parse(i.GetValue<string>(), System.Globalization.CultureInfo.InvariantCulture);
+            return 0.0;
+        }
+
+        static List<string> GetStringArray(JsonNode? fields, string key)
+        {
+            var result = new List<string>();
+            if (fields?[key]?["arrayValue"]?["values"] is JsonArray values)
+            {
+                foreach (var v in values)
+                {
+                    var s = v?["stringValue"]?.GetValue<string>();
+                    if (!string.IsNullOrEmpty(s))
+                        result.Add(s);
+                }
+            }
+            return result;
+        }
+
+        static JsonObject StringValue(string value) => new() { ["stringValue"] = value ?? string.Empty };
+
+        static JsonObject BoolValue(bool value) => new() { ["booleanValue"] = value };
+
+        static JsonObject DoubleValue(double value) => new() { ["doubleValue"] = value };
+
+        static JsonObject TimestampValue(DateTime value) => new()
+        {
+            ["timestampValue"] = value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture)
+        };
+
+        static JsonObject ArrayValue(IEnumerable<string> values)
+        {
+            var array = new JsonArray();
+            foreach (var v in values)
+                array.Add(StringValue(v));
+            return new JsonObject { ["arrayValue"] = new JsonObject { ["values"] = array } };
+        }
+
+        static JsonObject MapValue(JsonObject fields) => new() { ["mapValue"] = new JsonObject { ["fields"] = fields } };
+
+        static JsonObject CoordinatesValue(Coordinates? coordinates) => MapValue(new JsonObject
+        {
+            ["latitude"] = DoubleValue(coordinates?.Latitude ?? 0.0),
+            ["longitude"] = DoubleValue(coordinates?.Longitude ?? 0.0),
+        });
+
+        static JsonObject LocationFields(LocationModel location) => new()
+        {
+            ["id"] = StringValue(location.Id),
+            ["name"] = StringValue(location.Name),
+            ["description"] = StringValue(location.Description),
+            ["type"] = StringValue(location.Type),
+            ["building"] = StringValue(location.Building),
+            ["floor"] = StringValue(location.Floor),
+            ["qrCodeId"] = StringValue(location.QrCodeId),
+            ["coordinates"] = CoordinatesValue(location.Coordinates),
+            ["images"] = ArrayValue(location.Images ?? new List<string>()),
+            ["tags"] = ArrayValue(location.Tags ?? new List<string>()),
+        };
+
+        static JsonObject EventFields(EventItem eventItem) => new()
+        {
+            ["id"] = StringValue(eventItem.Id),
+            ["title"] = StringValue(eventItem.Title),
+            ["description"] = StringValue(eventItem.Description),
+            ["locationId"] = StringValue(eventItem.LocationId),
+            ["imageUrl"] = StringValue(eventItem.ImageUrl),
+            ["isPublished"] = BoolValue(eventItem.IsPublished),
+            ["startTime"] = TimestampValue(eventItem.StartTime),
+            ["endTime"] = TimestampValue(eventItem.EndTime),
+            ["coordinates"] = CoordinatesValue(eventItem.Coordinates),
+        };
+
+        static JsonObject NotificationFields(NotificationItem notification) => new()
+        {
+            ["id"] = StringValue(notification.Id),
+            ["title"] = StringValue(notification.Title),
+            ["body"] = StringValue(notification.Body),
+            ["type"] = StringValue(notification.Type),
+            ["relatedEventId"] = StringValue(notification.RelatedEventId),
+            ["relatedLocationId"] = StringValue(notification.RelatedLocationId),
+            ["createdAt"] = TimestampValue(notification.CreatedAt),
+        };
+
+        static JsonObject Document(JsonObject fields) => new() { ["fields"] = fields };
+
+        static async Task<bool> SetDocumentAsync(string collection, string id, JsonObject fields)
+        {
+            var path = $"{collection}/{Uri.EscapeDataString(id)}";
+            await SendAsync(HttpMethod.Patch, path, Document(fields)).ConfigureAwait(false);
+            return true;
+        }
+
+        static async Task<bool> CommitWritesAsync(IEnumerable<JsonObject> writes)
+        {
+            var writeArray = new JsonArray();
+            foreach (var w in writes)
+                writeArray.Add(w);
+
+            if (writeArray.Count == 0)
+                return true;
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{DocumentsRoot}:commit")
+            {
+                Content = new StringContent(new JsonObject { ["writes"] = writeArray }.ToJsonString(), Encoding.UTF8, "application/json")
+            };
+            await AddAuthorizationAsync(request).ConfigureAwait(false);
+
+            using var response = await Http.SendAsync(request).ConfigureAwait(false);
+            return true;
+        }
+
+        static JsonObject UpdateWrite(string collection, string id, JsonObject fields) => new()
+        {
+            ["update"] = new JsonObject
+            {
+                ["name"] = $"projects/{ProjectId}/databases/(default)/documents/{collection}/{id}",
+                ["fields"] = fields,
+            }
+        };
+
+        static JsonObject DeleteWrite(string collection, string id) => new()
+        {
+            ["delete"] = $"projects/{ProjectId}/databases/(default)/documents/{collection}/{id}"
+        };
+
+        static LocationModel? MapLocation(JsonNode document)
+        {
+            var fields = document["fields"];
+            return new LocationModel
+            {
+                Id = GetString(fields, "id") ?? DocumentIdOf(document),
+                Name = GetString(fields, "name") ?? string.Empty,
+                Description = GetString(fields, "description") ?? string.Empty,
+                Type = GetString(fields, "type") ?? string.Empty,
+                Floor = GetString(fields, "floor") ?? string.Empty,
+                Building = GetString(fields, "building") ?? string.Empty,
+                QrCodeId = GetString(fields, "qrCodeId") ?? string.Empty,
+                Coordinates = GetCoordinates(fields),
+                Images = GetStringArray(fields, "images"),
+                Tags = GetStringArray(fields, "tags"),
+            };
+        }
+
+        static EventItem MapEvent(JsonNode document)
+        {
+            var fields = document["fields"];
+            return new EventItem
+            {
+                Id = GetString(fields, "id") ?? DocumentIdOf(document),
+                Title = GetString(fields, "title") ?? string.Empty,
+                Description = GetString(fields, "description") ?? string.Empty,
+                LocationId = GetString(fields, "locationId") ?? string.Empty,
+                ImageUrl = GetString(fields, "imageUrl") ?? string.Empty,
+                IsPublished = GetBool(fields, "isPublished"),
+                StartTime = GetTimestamp(fields, "startTime") ?? default,
+                EndTime = GetTimestamp(fields, "endTime") ?? default,
+                Coordinates = GetCoordinates(fields),
+            };
+        }
+
+        static NotificationItem MapNotification(JsonNode document)
+        {
+            var fields = document["fields"];
+            return new NotificationItem
+            {
+                Id = GetString(fields, "id") ?? DocumentIdOf(document),
+                Title = GetString(fields, "title") ?? string.Empty,
+                Body = GetString(fields, "body") ?? string.Empty,
+                Type = GetString(fields, "type") ?? string.Empty,
+                RelatedEventId = GetString(fields, "relatedEventId") ?? string.Empty,
+                RelatedLocationId = GetString(fields, "relatedLocationId") ?? string.Empty,
+                CreatedAt = GetTimestamp(fields, "createdAt") ?? default,
+            };
         }
 
         public async Task<List<LocationModel>> GetAllLocationsAsync()
         {
             try
             {
-                var locations = new List<LocationModel>();
-                var tcs = new TaskCompletionSource<List<LocationModel>>();
-
-                GetFirestoreInstance().Collection(LocationsCollection)
-                    .Get()
-                    .AddOnSuccessListener(new SuccessListener(snapshot =>
-                    {
-                        if (snapshot is QuerySnapshot qs)
-                        {
-                            foreach (var doc in qs.Documents)
-                            {
-                                var location = MapLocationDocument(doc);
-                                if (location != null)
-                                    locations.Add(location);
-                            }
-                        }
-                        tcs.SetResult(locations);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"GetAllLocationsAsync failed: {ex.Message}");
-                        tcs.SetResult(locations);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                var documents = await QueryCollectionAsync(LocationsCollection).ConfigureAwait(false);
+                return documents.Select(MapLocation).OfType<LocationModel>().ToList();
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"GetAllLocationsAsync exception: {ex.Message}");
+                LogError($"GetAllLocationsAsync exception: {ex.Message}");
                 return new List<LocationModel>();
             }
         }
@@ -105,31 +396,12 @@ namespace CampusGuide.Services
         {
             try
             {
-                LocationModel? location = null;
-                var tcs = new TaskCompletionSource<LocationModel?>();
-
-                GetFirestoreInstance().Collection(LocationsCollection)
-                    .Document(id)
-                    .Get()
-                    .AddOnSuccessListener(new SuccessListener(snapshot =>
-                    {
-                        if (snapshot is DocumentSnapshot ds && ds.Exists())
-                        {
-                            location = MapLocationDocument(ds);
-                        }
-                        tcs.SetResult(location);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"GetLocationByIdAsync({id}) failed: {ex.Message}");
-                        tcs.SetResult(null);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                var document = await SendAsync(HttpMethod.Get, $"{LocationsCollection}/{Uri.EscapeDataString(id)}").ConfigureAwait(false);
+                return document == null ? null : MapLocation(document);
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"GetLocationByIdAsync({id}) exception: {ex.Message}");
+                LogError($"GetLocationByIdAsync({id}) exception: {ex.Message}");
                 return null;
             }
         }
@@ -141,22 +413,19 @@ namespace CampusGuide.Services
                 if (string.IsNullOrWhiteSpace(query))
                     return await GetAllLocationsAsync().ConfigureAwait(false);
 
-                // Client-side search: fetch all and filter by name/tags
                 var allLocations = await GetAllLocationsAsync().ConfigureAwait(false);
                 var searchLower = query.ToLowerInvariant();
 
-                var results = allLocations
+                return allLocations
                     .Where(loc =>
                         loc.Name.ToLowerInvariant().Contains(searchLower) ||
                         loc.Description.ToLowerInvariant().Contains(searchLower) ||
                         (loc.Tags?.Any(tag => tag.ToLowerInvariant().Contains(searchLower)) ?? false))
                     .ToList();
-
-                return results;
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"SearchLocationsAsync({query}) exception: {ex.Message}");
+                LogError($"SearchLocationsAsync({query}) exception: {ex.Message}");
                 return new List<LocationModel>();
             }
         }
@@ -165,36 +434,12 @@ namespace CampusGuide.Services
         {
             try
             {
-                var events = new List<EventItem>();
-                var tcs = new TaskCompletionSource<List<EventItem>>();
-
-                GetFirestoreInstance().Collection(EventsCollection)
-                    .WhereEqualTo("isPublished", true)
-                    .Get()
-                    .AddOnSuccessListener(new SuccessListener(snapshot =>
-                    {
-                        if (snapshot is QuerySnapshot qs)
-                        {
-                            foreach (var doc in qs.Documents)
-                            {
-                                var eventItem = MapEventDocument(doc);
-                                if (eventItem != null)
-                                    events.Add(eventItem);
-                            }
-                        }
-                        tcs.SetResult(events);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"GetUpcomingEventsAsync failed: {ex.Message}");
-                        tcs.SetResult(events);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                var documents = await QueryCollectionAsync(EventsCollection, PublishedFilter()).ConfigureAwait(false);
+                return documents.Select(MapEvent).ToList();
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"GetUpcomingEventsAsync exception: {ex.Message}");
+                LogError($"GetUpcomingEventsAsync exception: {ex.Message}");
                 return new List<EventItem>();
             }
         }
@@ -203,632 +448,147 @@ namespace CampusGuide.Services
         {
             try
             {
-                var notifications = new List<NotificationItem>();
-                var tcs = new TaskCompletionSource<List<NotificationItem>>();
-
-                GetFirestoreInstance().Collection(NotificationsCollection)
-                    .Get()
-                    .AddOnSuccessListener(new SuccessListener(snapshot =>
-                    {
-                        if (snapshot is QuerySnapshot qs)
-                        {
-                            foreach (var doc in qs.Documents)
-                            {
-                                var notification = MapNotificationDocument(doc);
-                                if (notification != null)
-                                    notifications.Add(notification);
-                            }
-                        }
-                        tcs.SetResult(notifications);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"GetNotificationsAsync failed: {ex.Message}");
-                        tcs.SetResult(notifications);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                var documents = await QueryCollectionAsync(NotificationsCollection).ConfigureAwait(false);
+                return documents.Select(MapNotification).ToList();
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"GetNotificationsAsync exception: {ex.Message}");
+                LogError($"GetNotificationsAsync exception: {ex.Message}");
                 return new List<NotificationItem>();
             }
         }
 
-        // Mapping helpers
-        private LocationModel? MapLocationDocument(DocumentSnapshot doc)
-        {
-            try
-            {
-                if (!doc.Exists())
-                    return null;
-
-                var id = doc.GetString("id") ?? doc.Id;
-                Log.Debug(TAG, $"MapLocationDocument: doc.Id='{doc.Id}', field 'id'='{doc.GetString("id")}', resolved id='{id}'");
-
-                var location = new LocationModel
-                {
-                    Id = id,
-                    Name = doc.GetString("name") ?? string.Empty,
-                    Description = doc.GetString("description") ?? string.Empty,
-                    Type = doc.GetString("type") ?? string.Empty,
-                    Floor = doc.GetString("floor") ?? string.Empty,
-                    Building = doc.GetString("building") ?? string.Empty,
-                    QrCodeId = doc.GetString("qrCodeId") ?? string.Empty,
-                };
-
-                // Map coordinates
-                if (doc.Get("coordinates") is IDictionary<string, object> coordMap)
-                {
-                    location.Coordinates = new Coordinates
-                    {
-                        Latitude = Convert.ToDouble(coordMap.ContainsKey("latitude") ? coordMap["latitude"] : 0.0),
-                        Longitude = Convert.ToDouble(coordMap.ContainsKey("longitude") ? coordMap["longitude"] : 0.0),
-                    };
-                }
-
-                // Map images array
-                if (doc.Get("images") is Java.Util.ArrayList imagesList)
-                {
-                    for (int i = 0; i < imagesList.Size(); i++)
-                    {
-                        var obj = imagesList.Get(i);
-                        var img = obj != null ? obj.ToString() : null;
-                        if (!string.IsNullOrEmpty(img))
-                            location.Images.Add(img);
-                    }
-                }
-
-                // Map tags array
-                if (doc.Get("tags") is Java.Util.ArrayList tagsList)
-                {
-                    for (int i = 0; i < tagsList.Size(); i++)
-                    {
-                        var obj = tagsList.Get(i);
-                        var tag = obj != null ? obj.ToString() : null;
-                        if (!string.IsNullOrEmpty(tag))
-                            location.Tags.Add(tag);
-                    }
-                }
-
-                return location;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(TAG, $"MapLocationDocument failed: {ex.Message}");
-                return null;
-            }
-        }
-
-        private EventItem? MapEventDocument(DocumentSnapshot doc)
-        {
-            try
-            {
-                if (!doc.Exists())
-                    return null;
-
-                var eventItem = new EventItem
-                {
-                    Id = doc.GetString("id") ?? doc.Id,
-                    Title = doc.GetString("title") ?? string.Empty,
-                    Description = doc.GetString("description") ?? string.Empty,
-                    LocationId = doc.GetString("locationId") ?? string.Empty,
-                    ImageUrl = doc.GetString("imageUrl") ?? string.Empty,
-                    IsPublished = doc.GetBoolean("isPublished") != null ? doc.GetBoolean("isPublished").BooleanValue() : false,
-                };
-
-                // Map timestamps
-                // Timestamps from Firestore are returned as Java.Lang.Object; use GetTimestamp and check
-                var startObj = doc.GetTimestamp("startTime");
-                if (startObj != null)
-                {
-                    try
-                    {
-                        var prop = startObj.GetType().GetProperty("Seconds")?.GetValue(startObj);
-                        long seconds = prop != null ? Convert.ToInt64(prop) : 0L;
-                        eventItem.StartTime = UnixTimeStampToDateTime(seconds);
-                    }
-                    catch { }
-                }
-
-                var endObj = doc.GetTimestamp("endTime");
-                if (endObj != null)
-                {
-                    try
-                    {
-                        var prop = endObj.GetType().GetProperty("Seconds")?.GetValue(endObj);
-                        long seconds = prop != null ? Convert.ToInt64(prop) : 0L;
-                        eventItem.EndTime = UnixTimeStampToDateTime(seconds);
-                    }
-                    catch { }
-                }
-
-                // Map coordinates
-                if (doc.Get("coordinates") is IDictionary<string, object> coordMap)
-                {
-                    eventItem.Coordinates = new Coordinates
-                    {
-                        Latitude = Convert.ToDouble(coordMap.ContainsKey("latitude") ? coordMap["latitude"] : 0.0),
-                        Longitude = Convert.ToDouble(coordMap.ContainsKey("longitude") ? coordMap["longitude"] : 0.0),
-                    };
-                }
-
-                return eventItem;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(TAG, $"MapEventDocument failed: {ex.Message}");
-                return null;
-            }
-        }
-
-        private NotificationItem? MapNotificationDocument(DocumentSnapshot doc)
-        {
-            try
-            {
-                if (!doc.Exists())
-                    return null;
-
-                var notification = new NotificationItem
-                {
-                    Id = doc.GetString("id") ?? doc.Id,
-                    Title = doc.GetString("title") ?? string.Empty,
-                    Body = doc.GetString("body") ?? string.Empty,
-                    Type = doc.GetString("type") ?? string.Empty,
-                    RelatedEventId = doc.GetString("relatedEventId") ?? string.Empty,
-                    RelatedLocationId = doc.GetString("relatedLocationId") ?? string.Empty,
-                };
-
-                // Map timestamp (interop-safe)
-                var createdObj = doc.GetTimestamp("createdAt");
-                if (createdObj != null)
-                {
-                    try
-                    {
-                        var prop = createdObj.GetType().GetProperty("Seconds")?.GetValue(createdObj);
-                        long seconds = prop != null ? Convert.ToInt64(prop) : 0L;
-                        notification.CreatedAt = UnixTimeStampToDateTime(seconds);
-                    }
-                    catch { }
-                }
-
-                return notification;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(TAG, $"MapNotificationDocument failed: {ex.Message}");
-                return null;
-            }
-        }
-
-        private DateTime UnixTimeStampToDateTime(long seconds)
-        {
-            var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            dateTime = dateTime.AddSeconds(seconds).ToLocalTime();
-            return dateTime;
-        }
-
-        /// <summary>
-        /// Adds a single location to Firestore.
-        /// </summary>
         public async Task<bool> AddLocationAsync(LocationModel location)
         {
             try
             {
                 if (string.IsNullOrEmpty(location?.Id))
                 {
-                    Log.Error(TAG, "Cannot add location with null or empty ID");
+                    LogError("Cannot add location with null or empty ID");
                     return false;
                 }
 
-                var tcs = new TaskCompletionSource<bool>();
-
-                var locationData = new Java.Util.HashMap();
-                locationData.Put("id", location.Id);
-                locationData.Put("name", location.Name ?? "");
-                locationData.Put("description", location.Description ?? "");
-                locationData.Put("type", location.Type ?? "");
-                locationData.Put("building", location.Building ?? "");
-                locationData.Put("floor", location.Floor ?? "");
-                locationData.Put("qrCodeId", location.QrCodeId ?? "");
-
-                // Add coordinates
-                var coordinates = new Java.Util.HashMap();
-                coordinates.Put("latitude", location.Coordinates?.Latitude ?? 0.0);
-                coordinates.Put("longitude", location.Coordinates?.Longitude ?? 0.0);
-                locationData.Put("coordinates", coordinates);
-
-                // Add images
-                var images = new Java.Util.ArrayList();
-                if (location.Images != null)
-                {
-                    foreach (var img in location.Images)
-                        images.Add(img);
-                }
-                locationData.Put("images", images);
-
-                // Add tags
-                var tags = new Java.Util.ArrayList();
-                if (location.Tags != null)
-                {
-                    foreach (var tag in location.Tags)
-                        tags.Add(tag);
-                }
-                locationData.Put("tags", tags);
-
-                GetFirestoreInstance()
-                    .Collection(LocationsCollection)
-                    .Document(location.Id)
-                    .Set(locationData)
-                    .AddOnSuccessListener(new SuccessListener(_ =>
-                    {
-                        Log.Debug(TAG, $"Location '{location.Name}' (ID: {location.Id}) added successfully");
-                        tcs.SetResult(true);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"AddLocationAsync failed: {ex.Message}");
-                        tcs.SetResult(false);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                await SetDocumentAsync(LocationsCollection, location.Id, LocationFields(location)).ConfigureAwait(false);
+                LogDebug($"Location '{location.Name}' (ID: {location.Id}) added successfully");
+                return true;
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"AddLocationAsync exception: {ex.Message}");
+                LogError($"AddLocationAsync exception: {ex.Message}");
                 return false;
             }
         }
 
-        /// <summary>
-        /// Adds multiple locations to Firestore in batch.
-        /// </summary>
         public async Task<bool> AddLocationsAsync(List<LocationModel> locations)
         {
             try
             {
                 if (locations == null || locations.Count == 0)
-                {
-                    Log.Warn(TAG, "No locations to add");
                     return true;
-                }
 
-                var tcs = new TaskCompletionSource<bool>();
-                var batch = GetFirestoreInstance().Batch();
-                var count = 0;
+                var writes = locations
+                    .Where(l => !string.IsNullOrEmpty(l?.Id))
+                    .Select(l => UpdateWrite(LocationsCollection, l.Id, LocationFields(l)));
 
-                foreach (var location in locations)
-                {
-                    if (string.IsNullOrEmpty(location?.Id))
-                        continue;
-
-                    var locationData = new Java.Util.HashMap();
-                    locationData.Put("id", location.Id);
-                    locationData.Put("name", location.Name ?? "");
-                    locationData.Put("description", location.Description ?? "");
-                    locationData.Put("type", location.Type ?? "");
-                    locationData.Put("building", location.Building ?? "");
-                    locationData.Put("floor", location.Floor ?? "");
-                    locationData.Put("qrCodeId", location.QrCodeId ?? "");
-
-                    // Add coordinates
-                    var coordinates = new Java.Util.HashMap();
-                    coordinates.Put("latitude", location.Coordinates?.Latitude ?? 0.0);
-                    coordinates.Put("longitude", location.Coordinates?.Longitude ?? 0.0);
-                    locationData.Put("coordinates", coordinates);
-
-                    // Add images
-                    var images = new Java.Util.ArrayList();
-                    if (location.Images != null)
-                    {
-                        foreach (var img in location.Images)
-                            images.Add(img);
-                    }
-                    locationData.Put("images", images);
-
-                    // Add tags
-                    var tags = new Java.Util.ArrayList();
-                    if (location.Tags != null)
-                    {
-                        foreach (var tag in location.Tags)
-                            tags.Add(tag);
-                    }
-                    locationData.Put("tags", tags);
-
-                    batch.Set(GetFirestoreInstance().Collection(LocationsCollection).Document(location.Id), locationData);
-                    count++;
-                }
-
-                batch.Commit()
-                    .AddOnSuccessListener(new SuccessListener(_ =>
-                    {
-                        Log.Debug(TAG, $"Batch added {count} locations successfully");
-                        tcs.SetResult(true);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"AddLocationsAsync batch failed: {ex.Message}");
-                        tcs.SetResult(false);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                var result = await CommitWritesAsync(writes).ConfigureAwait(false);
+                LogDebug($"Batch added {locations.Count} locations successfully");
+                return result;
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"AddLocationsAsync exception: {ex.Message}");
+                LogError($"AddLocationsAsync exception: {ex.Message}");
                 return false;
             }
         }
 
-        /// <summary>
-        /// Adds multiple events to Firestore in batch.
-        /// </summary>
         public async Task<bool> AddEventsAsync(List<EventItem> events)
         {
             try
             {
                 if (events == null || events.Count == 0)
-                {
-                    Log.Warn(TAG, "No events to add");
                     return true;
-                }
 
-                var tcs = new TaskCompletionSource<bool>();
-                var batch = GetFirestoreInstance().Batch();
-                var count = 0;
+                var writes = events
+                    .Where(e => !string.IsNullOrEmpty(e?.Id))
+                    .Select(e => UpdateWrite(EventsCollection, e.Id, EventFields(e)));
 
-                foreach (var eventItem in events)
-                {
-                    if (string.IsNullOrEmpty(eventItem?.Id))
-                        continue;
-
-                    var eventData = new Java.Util.HashMap();
-                    eventData.Put("id", eventItem.Id);
-                    eventData.Put("title", eventItem.Title ?? "");
-                    eventData.Put("description", eventItem.Description ?? "");
-                    eventData.Put("locationId", eventItem.LocationId ?? "");
-                    eventData.Put("imageUrl", eventItem.ImageUrl ?? "");
-                    eventData.Put("isPublished", Java.Lang.Boolean.ValueOf(eventItem.IsPublished));
-                    eventData.Put("startTime", ToJavaDate(eventItem.StartTime));
-                    eventData.Put("endTime", ToJavaDate(eventItem.EndTime));
-
-                    var coordinates = new Java.Util.HashMap();
-                    coordinates.Put("latitude", eventItem.Coordinates?.Latitude ?? 0.0);
-                    coordinates.Put("longitude", eventItem.Coordinates?.Longitude ?? 0.0);
-                    eventData.Put("coordinates", coordinates);
-
-                    batch.Set(GetFirestoreInstance().Collection(EventsCollection).Document(eventItem.Id), eventData);
-                    count++;
-                }
-
-                batch.Commit()
-                    .AddOnSuccessListener(new SuccessListener(_ =>
-                    {
-                        Log.Debug(TAG, $"Batch added {count} events successfully");
-                        tcs.SetResult(true);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"AddEventsAsync batch failed: {ex.Message}");
-                        tcs.SetResult(false);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                var result = await CommitWritesAsync(writes).ConfigureAwait(false);
+                LogDebug($"Batch added {events.Count} events successfully");
+                return result;
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"AddEventsAsync exception: {ex.Message}");
+                LogError($"AddEventsAsync exception: {ex.Message}");
                 return false;
             }
         }
 
-        /// <summary>
-        /// Adds multiple notifications to Firestore in batch.
-        /// </summary>
         public async Task<bool> AddNotificationsAsync(List<NotificationItem> notifications)
         {
             try
             {
                 if (notifications == null || notifications.Count == 0)
-                {
-                    Log.Warn(TAG, "No notifications to add");
                     return true;
-                }
 
-                var tcs = new TaskCompletionSource<bool>();
-                var batch = GetFirestoreInstance().Batch();
-                var count = 0;
+                var writes = notifications
+                    .Where(n => !string.IsNullOrEmpty(n?.Id))
+                    .Select(n => UpdateWrite(NotificationsCollection, n.Id, NotificationFields(n)));
 
-                foreach (var notification in notifications)
-                {
-                    if (string.IsNullOrEmpty(notification?.Id))
-                        continue;
-
-                    var notificationData = new Java.Util.HashMap();
-                    notificationData.Put("id", notification.Id);
-                    notificationData.Put("title", notification.Title ?? "");
-                    notificationData.Put("body", notification.Body ?? "");
-                    notificationData.Put("type", notification.Type ?? "");
-                    notificationData.Put("relatedEventId", notification.RelatedEventId ?? "");
-                    notificationData.Put("relatedLocationId", notification.RelatedLocationId ?? "");
-                    notificationData.Put("createdAt", ToJavaDate(notification.CreatedAt));
-
-                    batch.Set(GetFirestoreInstance().Collection(NotificationsCollection).Document(notification.Id), notificationData);
-                    count++;
-                }
-
-                batch.Commit()
-                    .AddOnSuccessListener(new SuccessListener(_ =>
-                    {
-                        Log.Debug(TAG, $"Batch added {count} notifications successfully");
-                        tcs.SetResult(true);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"AddNotificationsAsync batch failed: {ex.Message}");
-                        tcs.SetResult(false);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                var result = await CommitWritesAsync(writes).ConfigureAwait(false);
+                LogDebug($"Batch added {notifications.Count} notifications successfully");
+                return result;
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"AddNotificationsAsync exception: {ex.Message}");
+                LogError($"AddNotificationsAsync exception: {ex.Message}");
                 return false;
             }
         }
 
-        private static Java.Util.Date ToJavaDate(DateTime value)
-        {
-            return new Java.Util.Date(new DateTimeOffset(value.ToUniversalTime()).ToUnixTimeMilliseconds());
-        }
-
-        /// <summary>
-        /// Deletes a single location from Firestore.
-        /// </summary>
         public async Task<bool> DeleteLocationAsync(string id)
         {
             try
             {
                 if (string.IsNullOrEmpty(id))
                 {
-                    Log.Error(TAG, "Cannot delete location with null or empty ID");
+                    LogError("Cannot delete location with null or empty ID");
                     return false;
                 }
 
-                var tcs = new TaskCompletionSource<bool>();
-
-                GetFirestoreInstance()
-                    .Collection(LocationsCollection)
-                    .Document(id)
-                    .Delete()
-                    .AddOnSuccessListener(new SuccessListener(_ =>
-                    {
-                        Log.Debug(TAG, $"Location '{id}' deleted successfully");
-                        tcs.SetResult(true);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"DeleteLocationAsync failed: {ex.Message}");
-                        tcs.SetResult(false);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                await SendAsync(HttpMethod.Delete, $"{LocationsCollection}/{Uri.EscapeDataString(id)}").ConfigureAwait(false);
+                LogDebug($"Location '{id}' deleted successfully");
+                return true;
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"DeleteLocationAsync exception: {ex.Message}");
+                LogError($"DeleteLocationAsync exception: {ex.Message}");
                 return false;
             }
         }
 
-        /// <summary>
-        /// Deletes all locations from Firestore.
-        /// Used for clearing old test data before re-seeding.
-        /// </summary>
         public async Task<bool> DeleteAllLocationsAsync()
         {
             try
             {
-                Log.Debug(TAG, "Deleting all locations from Firestore...");
+                LogDebug("Deleting all locations from Firestore...");
 
                 var locations = await GetAllLocationsAsync().ConfigureAwait(false);
                 if (locations.Count == 0)
                 {
-                    Log.Debug(TAG, "No locations to delete");
+                    LogDebug("No locations to delete");
                     return true;
                 }
 
-                var tcs = new TaskCompletionSource<bool>();
-                var batch = GetFirestoreInstance().Batch();
-                var count = 0;
-
-                foreach (var location in locations)
-                {
-                    batch.Delete(GetFirestoreInstance().Collection(LocationsCollection).Document(location.Id));
-                    count++;
-                }
-
-                batch.Commit()
-                    .AddOnSuccessListener(new SuccessListener(_ =>
-                    {
-                        Log.Debug(TAG, $"✅ Deleted {count} locations successfully");
-                        tcs.SetResult(true);
-                    }))
-                    .AddOnFailureListener(new FailureListener(ex =>
-                    {
-                        Log.Error(TAG, $"DeleteAllLocationsAsync batch failed: {ex.Message}");
-                        tcs.SetResult(false);
-                    }));
-
-                return await tcs.Task.ConfigureAwait(false);
+                var writes = locations.Select(l => DeleteWrite(LocationsCollection, l.Id));
+                var result = await CommitWritesAsync(writes).ConfigureAwait(false);
+                LogDebug($"Deleted {locations.Count} locations successfully");
+                return result;
             }
             catch (Exception ex)
             {
-                Log.Error(TAG, $"DeleteAllLocationsAsync exception: {ex.Message}");
+                LogError($"DeleteAllLocationsAsync exception: {ex.Message}");
                 return false;
             }
         }
     }
-
-    #region Firestore Callback Listeners
-
-    /// <summary>
-    /// Helper class wrapping IOnSuccessListener for TaskCompletionSource integration.
-    /// </summary>
-    internal class SuccessListener : Java.Lang.Object, IOnSuccessListener
-    {
-        private readonly Action<Java.Lang.Object?> _onSuccessAction;
-
-        public SuccessListener(Action<Java.Lang.Object?> onSuccessAction)
-        {
-            _onSuccessAction = onSuccessAction;
-        }
-
-        public void OnSuccess(Java.Lang.Object? result)
-        {
-            _onSuccessAction?.Invoke(result);
-        }
-    }
-
-    /// <summary>
-    /// Helper class wrapping IOnFailureListener for TaskCompletionSource integration.
-    /// </summary>
-    internal class FailureListener : Java.Lang.Object, IOnFailureListener
-    {
-        private readonly Action<Java.Lang.Exception> _onFailureAction;
-
-        public FailureListener(Action<Java.Lang.Exception> onFailureAction)
-        {
-            _onFailureAction = onFailureAction;
-        }
-
-        public void OnFailure(Java.Lang.Exception ex)
-        {
-            _onFailureAction?.Invoke(ex);
-        }
-    }
-
-    #endregion
-#else
-    /// <summary>
-    /// Stub Firestore implementation for non-Android platforms.
-    /// Real implementation only available on Android with native Firebase bindings.
-    /// </summary>
-    public class FirebaseFirestoreService : IFirestoreService
-    {
-        public Task<List<LocationModel>> GetAllLocationsAsync() => Task.FromResult(new List<LocationModel>());
-        public Task<LocationModel?> GetLocationByIdAsync(string id) => Task.FromResult<LocationModel?>(null);
-        public Task<List<LocationModel>> SearchLocationsAsync(string query) => Task.FromResult(new List<LocationModel>());
-        public Task<List<EventItem>> GetUpcomingEventsAsync() => Task.FromResult(new List<EventItem>());
-        public Task<List<NotificationItem>> GetNotificationsAsync() => Task.FromResult(new List<NotificationItem>());
-        public Task<bool> AddLocationAsync(LocationModel location) => Task.FromResult(false);
-        public Task<bool> AddLocationsAsync(List<LocationModel> locations) => Task.FromResult(false);
-        public Task<bool> AddEventsAsync(List<EventItem> events) => Task.FromResult(false);
-        public Task<bool> AddNotificationsAsync(List<NotificationItem> notifications) => Task.FromResult(false);
-        public Task<bool> DeleteLocationAsync(string id) => Task.FromResult(false);
-        public Task<bool> DeleteAllLocationsAsync() => Task.FromResult(false);
-    }
-#endif
 }

@@ -30,4 +30,4 @@ jobs:
           [System.IO.File]::WriteAllText("CampusGuide/google-maps.key", $env:GOOGLE_MAPS_API_KEY)
 
       - name: Build Android app
-        run: dotnet build CampusGuide/CampusGuide.csproj -f net10.0-android -c Release
+        run: dotnet build CampusGuide/CampusGuide.csproj -f net10.0-android -c Debug

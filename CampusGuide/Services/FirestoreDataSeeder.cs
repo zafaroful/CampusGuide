@@ -6,7 +6,6 @@ using LocationModel = CampusGuide.Models.Location;
 
 #if ANDROID
 using Android.Util;
-using Firebase.Firestore;
 #endif
 
 namespace CampusGuide.Services

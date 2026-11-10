@@ -49,7 +49,7 @@
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 	</PropertyGroup>
@@ -86,8 +86,6 @@
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.0" />
 		<!-- ZXing cross-platform QR code scanner -->
 		<PackageReference Include="ZXing.Net.MAUI" Version="0.4.0" />
-		<!-- Firebase / Firestore Android bindings (native Android only) -->
-		<PackageReference Include="Xamarin.Firebase.Firestore" Version="124.0.1" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -113,6 +111,10 @@
 			<AndroidResource Include="$(GoogleMapsResourceDir)\google_maps.xml" Link="Resources\values\google_maps.xml" />
 		</ItemGroup>
 	</Target>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<RunAOTCompilation>false</RunAOTCompilation>
+	</PropertyGroup>
 
 	<!-- Debug Configuration: Disable AOT and Trimming for faster builds -->
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
