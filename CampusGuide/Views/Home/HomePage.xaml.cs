@@ -25,7 +25,7 @@ namespace CampusGuide.Views.Home
 
                 var header = new Border
                 {
-                    Padding = new Thickness(20, 24),
+                    Padding = 20,
                     StrokeShape = new RoundRectangle { CornerRadius = 16 },
                     Stroke = Colors.Transparent,
                     Background = new LinearGradientBrush
@@ -67,13 +67,13 @@ namespace CampusGuide.Views.Home
                     Padding = 20,
                     StrokeShape = new RoundRectangle { CornerRadius = 16 },
                     Stroke = Colors.Transparent,
-                    BackgroundColor = Color.FromArgb("#F3F4F8")
+                    BackgroundColor = ThemeColor("#F3F4F8", "#2A2D3A")
                 };
                 var updatesContent = new VerticalStackLayout { Spacing = 10, HorizontalOptions = LayoutOptions.Center };
                 updatesContent.Add(new Label { Text = "Campus Updates", FontAttributes = FontAttributes.Bold, FontSize = 16, HorizontalTextAlignment = TextAlignment.Center });
 
                 var homeLoadingStack = new VerticalStackLayout { Spacing = 10, HorizontalOptions = LayoutOptions.Center };
-                homeLoadingStack.Add(new ActivityIndicator { IsRunning = true, Color = Color.FromArgb("#3949AB") });
+                homeLoadingStack.Add(new ActivityIndicator { IsRunning = true });
                 homeLoadingStack.Add(new Label { Text = "Loading campus updates...", HorizontalTextAlignment = TextAlignment.Center });
                 homeLoadingStack.SetBinding(IsVisibleProperty, new Binding("IsLoading", source: _viewModel));
                 updatesContent.Add(homeLoadingStack);
@@ -103,10 +103,10 @@ namespace CampusGuide.Views.Home
         {
             var card = new Border
             {
-                Padding = new Thickness(24, 28),
+                Padding = 20,
                 StrokeShape = new RoundRectangle { CornerRadius = 20 },
                 Stroke = Colors.Transparent,
-                BackgroundColor = Color.FromArgb("#3949AB"),
+                BackgroundColor = ThemeColor("#00695C", "#00796B"),
                 Content = new HorizontalStackLayout
                 {
                     Spacing = 20,
@@ -137,7 +137,7 @@ namespace CampusGuide.Views.Home
             {
                 Padding = 16,
                 StrokeShape = new RoundRectangle { CornerRadius = 14 },
-                Stroke = Color.FromArgb("#D0D5E2"),
+                Stroke = ThemeColor("#D0D5E2", "#4A4F63"),
                 BackgroundColor = Colors.Transparent,
                 MinimumHeightRequest = 48,
                 Content = new HorizontalStackLayout
@@ -145,7 +145,7 @@ namespace CampusGuide.Views.Home
                     Spacing = 12,
                     Children =
                     {
-                        new Label { Text = icon, FontSize = 26, TextColor = Color.FromArgb("#3949AB"), VerticalOptions = LayoutOptions.Center },
+                        new Label { Text = icon, FontSize = 26, VerticalOptions = LayoutOptions.Center },
                         new VerticalStackLayout
                         {
                             Spacing = 2,
@@ -159,9 +159,17 @@ namespace CampusGuide.Views.Home
                     }
                 }
             };
+            tile.Stroke = ThemeColor("#D0D5E2", "#4A4F63");
             SemanticProperties.SetDescription(tile, subtitle);
             tile.GestureRecognizers.Add(new TapGestureRecognizer { Command = command });
             return tile;
+        }
+
+        private static Color ThemeColor(string light, string dark)
+        {
+            return Application.Current?.RequestedTheme == AppTheme.Dark
+                ? Color.FromArgb(dark)
+                : Color.FromArgb(light);
         }
     }
 }
