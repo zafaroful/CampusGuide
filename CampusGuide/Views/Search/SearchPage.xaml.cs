@@ -25,29 +25,70 @@ namespace CampusGuide.Views.Search
 
             var layout = new VerticalStackLayout { Spacing = 15 };
 
-            // Search Bar with binding and styling
-            var searchBar = new SearchBar 
-            { 
-                Placeholder = "Search locations by name, type, building...",
-                FontSize = 16,
-                CancelButtonColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#4DB6AC") : Color.FromArgb("#00695C"),
-                PlaceholderColor = Color.Parse("#999999"),
-                TextColor = Color.Parse("#333333"),
-                BackgroundColor = Color.Parse("#F5F5F5"),
-                Margin = new Thickness(0, 0, 0, 15)
-            };
-            searchBar.SetBinding(SearchBar.TextProperty, 
-                new Binding("SearchQuery", mode: BindingMode.TwoWay, source: _viewModel));
-
-            // Log search query changes
-            searchBar.SearchButtonPressed += (sender, args) =>
+            // Soft filled search field with search icon, placeholder and clear icon
+            var searchEntry = new Entry
             {
-                Debug.WriteLine($"SearchPage: Search button pressed with query: '{searchBar.Text}'");
+                Placeholder = "Search locations by name, type, building...",
+                PlaceholderColor = Color.Parse("#8A8A8A"),
+                TextColor = Color.Parse("#333333"),
+                FontSize = 16,
+                BackgroundColor = Colors.Transparent,
+                VerticalOptions = LayoutOptions.Center,
+                ReturnType = ReturnType.Search
+            };
+            searchEntry.SetBinding(Entry.TextProperty,
+                new Binding("SearchQuery", mode: BindingMode.TwoWay, source: _viewModel));
+            SemanticProperties.SetDescription(searchEntry, "Search campus locations");
+
+            var searchIcon = new Label
+            {
+                Text = "\U0001F50D",
+                FontSize = 16,
+                TextColor = Color.Parse("#8A8A8A"),
+                VerticalOptions = LayoutOptions.Center
             };
 
-            SemanticProperties.SetDescription(searchBar, "Search campus locations");
+            var clearIcon = new Label
+            {
+                Text = "\u2715",
+                FontSize = 16,
+                TextColor = Color.Parse("#00695C"),
+                VerticalOptions = LayoutOptions.Center,
+                Padding = new Thickness(8, 0, 0, 0)
+            };
+            SemanticProperties.SetDescription(clearIcon, "Clear search");
+            clearIcon.GestureRecognizers.Add(new TapGestureRecognizer
+            {
+                Command = new Command(() => _viewModel!.SearchQuery = string.Empty)
+            });
+            clearIcon.SetBinding(IsVisibleProperty, new Binding("SearchQuery",
+                converter: new NotNullOrEmptyConverter(), source: _viewModel));
 
-            layout.Add(searchBar);
+            var searchGrid = new Grid
+            {
+                ColumnDefinitions = new ColumnDefinitionCollection
+                {
+                    new ColumnDefinition(GridLength.Auto),
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Auto)
+                },
+                ColumnSpacing = 10
+            };
+            searchGrid.Add(searchIcon, 0, 0);
+            searchGrid.Add(searchEntry, 1, 0);
+            searchGrid.Add(clearIcon, 2, 0);
+
+            var searchField = new Border
+            {
+                BackgroundColor = Color.Parse("#F1F3F4"),
+                Stroke = Colors.Transparent,
+                StrokeShape = new RoundRectangle { CornerRadius = 24 },
+                Padding = new Thickness(16, 10),
+                Margin = new Thickness(0, 0, 0, 15),
+                Content = searchGrid
+            };
+
+            layout.Add(searchField);
 
             // Loading indicator
             var loadingLabel = new Label
@@ -122,11 +163,18 @@ namespace CampusGuide.Views.Search
         {
             var frame = new Border
             {
-                Stroke = Color.Parse("#D0D0D0"),
-                StrokeShape = new RoundRectangle { CornerRadius = 12 },
-                Padding = 16,
-                Margin = new Thickness(0, 5, 0, 5),
-                BackgroundColor = Color.Parse("#FFFFFF")
+                Stroke = Colors.Transparent,
+                StrokeShape = new RoundRectangle { CornerRadius = 16 },
+                Padding = new Thickness(18, 16),
+                Margin = new Thickness(0, 8, 0, 8),
+                BackgroundColor = Color.Parse("#FFFFFF"),
+                Shadow = new Shadow
+                {
+                    Brush = new SolidColorBrush(Color.Parse("#000000")),
+                    Offset = new Point(0, 2),
+                    Radius = 8,
+                    Opacity = 0.12f
+                }
             };
 
             var tapGesture = new TapGestureRecognizer();
@@ -146,14 +194,14 @@ namespace CampusGuide.Views.Search
                     new RowDefinition(GridLength.Auto),
                     new RowDefinition(GridLength.Auto)
                 },
-                RowSpacing = 8
+                RowSpacing = 6
             };
 
             // Name and Type in a horizontal layout
             var nameTypeStack = new HorizontalStackLayout
             {
                 Spacing = 10,
-                Margin = new Thickness(0, 0, 0, 5)
+                Margin = new Thickness(0, 0, 0, 2)
             };
 
             var nameLabel = new Label 
