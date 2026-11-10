@@ -33,10 +33,18 @@ namespace CampusGuide.Services
 
         const string AuthSignUpUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=";
 
-        static readonly HttpClient Http = new();
+        static readonly HttpClient Http = CreateHttpClient();
         static readonly SemaphoreSlim AuthLock = new(1, 1);
         static string? idToken;
         static DateTime idTokenExpiresUtc;
+
+        static HttpClient CreateHttpClient()
+        {
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-Android-Package", "com.companyname.campusguide");
+            client.DefaultRequestHeaders.Add("X-Android-Cert", "14FC0872F47A1AF958140D5019CBAA6C1512AEE0");
+            return client;
+        }
 
         static async Task<string> GetIdTokenAsync()
         {
@@ -380,16 +388,8 @@ namespace CampusGuide.Services
 
         public async Task<List<LocationModel>> GetAllLocationsAsync()
         {
-            try
-            {
-                var documents = await QueryCollectionAsync(LocationsCollection).ConfigureAwait(false);
-                return documents.Select(MapLocation).OfType<LocationModel>().ToList();
-            }
-            catch (Exception ex)
-            {
-                LogError($"GetAllLocationsAsync exception: {ex.Message}");
-                return new List<LocationModel>();
-            }
+            var documents = await QueryCollectionAsync(LocationsCollection).ConfigureAwait(false);
+            return documents.Select(MapLocation).OfType<LocationModel>().ToList();
         }
 
         public async Task<LocationModel?> GetLocationByIdAsync(string id)

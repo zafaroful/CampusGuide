@@ -1,4 +1,5 @@
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Shapes;
 using CampusGuide.ViewModels.Search;
 using CampusGuide.Models;
 using CampusGuide.Services;
@@ -29,7 +30,7 @@ namespace CampusGuide.Views.Search
             { 
                 Placeholder = "Search locations by name, type, building...",
                 FontSize = 16,
-                CancelButtonColor = Color.Parse("#7B61FF"),
+                CancelButtonColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#4DB6AC") : Color.FromArgb("#00695C"),
                 PlaceholderColor = Color.Parse("#999999"),
                 TextColor = Color.Parse("#333333"),
                 BackgroundColor = Color.Parse("#F5F5F5"),
@@ -79,10 +80,7 @@ namespace CampusGuide.Views.Search
                 HorizontalOptions = LayoutOptions.Center,
                 Margin = new Thickness(0, 20, 0, 0)
             };
-            var emptyBinding = new Binding("Results.Count", 
-                converter: new NegativeConverter(), 
-                source: _viewModel);
-            emptyLabel.SetBinding(IsVisibleProperty, emptyBinding);
+            emptyLabel.SetBinding(IsVisibleProperty, "ShowEmptyState");
             layout.Add(emptyLabel);
 
             // Create and bind CollectionView to results
@@ -122,14 +120,13 @@ namespace CampusGuide.Views.Search
 
         private static View CreateLocationCell()
         {
-            var frame = new Frame
+            var frame = new Border
             {
-                BorderColor = Color.Parse("#D0D0D0"),
-                CornerRadius = 10,
-                Padding = 15,
+                Stroke = Color.Parse("#D0D0D0"),
+                StrokeShape = new RoundRectangle { CornerRadius = 12 },
+                Padding = 16,
                 Margin = new Thickness(0, 5, 0, 5),
-                Background = Color.Parse("#FFFFFF"),
-                HasShadow = true
+                BackgroundColor = Color.Parse("#FFFFFF")
             };
 
             var tapGesture = new TapGestureRecognizer();
@@ -171,8 +168,8 @@ namespace CampusGuide.Views.Search
             var typeLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Color.Parse("#7B61FF"),
-                FontAttributes = FontAttributes.Italic
+                TextColor = Color.Parse("#00695C"),
+                FontAttributes = FontAttributes.Bold
             };
             typeLabel.SetBinding(Label.TextProperty, "Type");
             nameTypeStack.Add(typeLabel);
@@ -208,6 +205,7 @@ namespace CampusGuide.Views.Search
                 TextColor = Color.Parse("#666666")
             };
             floorLabel.SetBinding(Label.TextProperty, new Binding { Path = "Floor", StringFormat = "🏢 Floor: {0}" });
+            floorLabel.SetBinding(IsVisibleProperty, new Binding("Floor", converter: new NotNullOrEmptyConverter()));
             Grid.SetRow(floorLabel, 3);
             grid.Add(floorLabel, 0, 3);
 

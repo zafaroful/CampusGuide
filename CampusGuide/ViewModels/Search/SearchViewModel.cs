@@ -17,22 +17,33 @@ namespace CampusGuide.ViewModels.Search
         private ObservableCollection<LocationModel> allLocations = new();
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ShowEmptyState))]
         private bool isLoading = false;
 
         [ObservableProperty]
         private string searchQuery = string.Empty;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(HasError))]
+        [NotifyPropertyChangedFor(nameof(HasError), nameof(ShowEmptyState))]
         private string errorMessage = string.Empty;
 
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+
+        public bool HasResults => Results.Count > 0;
+
+        public bool ShowEmptyState => !IsLoading && !HasError && !HasResults;
 
         private readonly IFirestoreService _firestoreService;
         private bool _dataLoaded = false;
 
         public SearchViewModel()
         {
+            Results.CollectionChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(HasResults));
+                OnPropertyChanged(nameof(ShowEmptyState));
+            };
+
             _firestoreService = ServiceHelper.GetService<IFirestoreService>();
             if (_firestoreService == null)
             {
@@ -133,6 +144,11 @@ namespace CampusGuide.ViewModels.Search
                 else
                 {
                     Debug.WriteLine("SearchViewModel: No locations found in Firestore");
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        AllLocations.Clear();
+                        Results.Clear();
+                    });
                     ErrorMessage = "No campus locations are available yet.";
                 }
             }
