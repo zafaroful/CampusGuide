@@ -29,7 +29,7 @@ namespace CampusGuide.Views.Favorites
                 Command = _viewModel?.RefreshFavoritesCommand,
                 HorizontalOptions = LayoutOptions.Fill,
                 VerticalOptions = LayoutOptions.Fill,
-                RefreshColor = Colors.Blue
+                RefreshColor = Themed("#00695C", "#4DB6AC")
             };
 
             // Bind IsRefreshing to show loading state during refresh
@@ -81,7 +81,7 @@ namespace CampusGuide.Views.Favorites
             {
                 IsRunning = true,
                 IsVisible = true,
-                Color = Colors.Blue,
+                Color = Themed("#00695C", "#4DB6AC"),
                 Scale = 1.5
             });
             loadingStack.Add(new Label
@@ -179,7 +179,7 @@ namespace CampusGuide.Views.Favorites
             };
             var errorLabel = new Label
             {
-                TextColor = Colors.Red,
+                TextColor = Themed("#C62828", "#EF9A9A"),
                 FontAttributes = FontAttributes.Bold,
                 LineBreakMode = LineBreakMode.WordWrap
             };
@@ -286,7 +286,21 @@ namespace CampusGuide.Views.Favorites
             tapGesture.Tapped += OnFavoriteCardTapped;
             card.GestureRecognizers.Add(tapGesture);
 
-            return new VerticalStackLayout { card };
+            var removeSwipeItem = new SwipeItem
+            {
+                Text = "Remove",
+                BackgroundColor = Themed("#D32F2F", "#B71C1C")
+            };
+            removeSwipeItem.SetBinding(SwipeItem.CommandProperty, new Binding("RemoveFavoriteCommand", source: _viewModel));
+            removeSwipeItem.SetBinding(SwipeItem.CommandParameterProperty, "Id");
+
+            var swipeView = new SwipeView
+            {
+                Content = card,
+                RightItems = new SwipeItems { removeSwipeItem }
+            };
+
+            return new VerticalStackLayout { swipeView };
         }
 
         private static async void OnFavoriteCardTapped(object? sender, TappedEventArgs e)
