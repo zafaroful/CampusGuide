@@ -99,6 +99,21 @@
 	  </MauiXaml>
 	</ItemGroup>
 
+	<!-- Inject Google Maps API key from git-ignored google-maps.key into a generated Android string resource -->
+	<Target Name="GenerateGoogleMapsKeyResource" BeforeTargets="PrepareForBuild" Condition="'$(TargetFramework)' == 'net10.0-android'">
+		<PropertyGroup>
+			<GoogleMapsKeyFile>$(MSBuildProjectDirectory)\google-maps.key</GoogleMapsKeyFile>
+			<GoogleMapsKey Condition="Exists('$(GoogleMapsKeyFile)')">$([System.IO.File]::ReadAllText('$(GoogleMapsKeyFile)').Trim())</GoogleMapsKey>
+			<GoogleMapsKey Condition="'$(GoogleMapsKey)' == ''">YOUR_GOOGLE_MAPS_API_KEY</GoogleMapsKey>
+			<GoogleMapsResourceDir>$(IntermediateOutputPath)googlemaps\values</GoogleMapsResourceDir>
+		</PropertyGroup>
+		<MakeDir Directories="$(GoogleMapsResourceDir)" />
+		<WriteLinesToFile File="$(GoogleMapsResourceDir)\google_maps.xml" Overwrite="true" Lines="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;;&lt;resources&gt;&lt;string name=&quot;google_maps_api_key&quot;&gt;$(GoogleMapsKey)&lt;/string&gt;&lt;/resources&gt;" />
+		<ItemGroup>
+			<AndroidResource Include="$(GoogleMapsResourceDir)\google_maps.xml" Link="Resources\values\google_maps.xml" />
+		</ItemGroup>
+	</Target>
+
 	<!-- Debug Configuration: Disable AOT and Trimming for faster builds -->
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
 		<PublishTrimmed>false</PublishTrimmed>

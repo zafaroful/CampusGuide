@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Local Google Maps API key (injected at build time)
+CampusGuide/google-maps.key
