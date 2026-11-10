@@ -19,13 +19,30 @@ namespace CampusGuide.Views.Home
 
                 var layout = new VerticalStackLayout { Padding = new Thickness(16, 20), Spacing = 20 };
 
-                var header = new VerticalStackLayout { Spacing = 4 };
-                header.Add(new Label { Text = "Welcome to CampusGuide", FontSize = 26, FontAttributes = FontAttributes.Bold });
-                header.Add(new Label { Text = "Campus Navigation & Assistance", FontSize = 15, TextColor = Colors.Gray });
+                var headerContent = new VerticalStackLayout { Spacing = 4 };
+                headerContent.Add(new Label { Text = "Welcome to CampusGuide", FontSize = 26, FontAttributes = FontAttributes.Bold, TextColor = Colors.White });
+                headerContent.Add(new Label { Text = "Campus Navigation & Assistance", FontSize = 15, TextColor = Color.FromArgb("#E8EAF6") });
+
+                var header = new Border
+                {
+                    Padding = new Thickness(20, 24),
+                    StrokeShape = new RoundRectangle { CornerRadius = 16 },
+                    Stroke = Colors.Transparent,
+                    Background = new LinearGradientBrush
+                    {
+                        StartPoint = new Point(0, 0),
+                        EndPoint = new Point(1, 1),
+                        GradientStops =
+                        {
+                            new GradientStop(Color.FromArgb("#1A237E"), 0),
+                            new GradientStop(Color.FromArgb("#3949AB"), 1)
+                        }
+                    },
+                    Content = headerContent
+                };
                 layout.Add(header);
 
-                var scanCard = CreateCard("Scan QR Code", "Find a location instantly", "#3949AB", Colors.White, _viewModel.GoToScannerCommand);
-                SemanticProperties.SetDescription(scanCard, "Opens the QR code scanner");
+                var scanCard = CreateScanCard(_viewModel.GoToScannerCommand);
                 layout.Add(scanCard);
 
                 var grid = new Grid
@@ -82,24 +99,34 @@ namespace CampusGuide.Views.Home
             }
         }
 
-        private static Border CreateCard(string title, string subtitle, string background, Color textColor, System.Windows.Input.ICommand command)
+        private static Border CreateScanCard(System.Windows.Input.ICommand command)
         {
             var card = new Border
             {
-                Padding = 20,
-                StrokeShape = new RoundRectangle { CornerRadius = 16 },
+                Padding = new Thickness(24, 28),
+                StrokeShape = new RoundRectangle { CornerRadius = 20 },
                 Stroke = Colors.Transparent,
-                BackgroundColor = Color.FromArgb(background),
-                Content = new VerticalStackLayout
+                BackgroundColor = Color.FromArgb("#3949AB"),
+                Content = new HorizontalStackLayout
                 {
-                    Spacing = 4,
+                    Spacing = 20,
                     Children =
                     {
-                        new Label { Text = title, FontSize = 20, FontAttributes = FontAttributes.Bold, TextColor = textColor },
-                        new Label { Text = subtitle, FontSize = 14, TextColor = textColor }
+                        new Label { Text = "\u25A3", FontSize = 48, TextColor = Colors.White, VerticalOptions = LayoutOptions.Center },
+                        new VerticalStackLayout
+                        {
+                            Spacing = 4,
+                            VerticalOptions = LayoutOptions.Center,
+                            Children =
+                            {
+                                new Label { Text = "Scan QR Code", FontSize = 22, FontAttributes = FontAttributes.Bold, TextColor = Colors.White },
+                                new Label { Text = "Find a location instantly", FontSize = 14, TextColor = Colors.White }
+                            }
+                        }
                     }
                 }
             };
+            SemanticProperties.SetDescription(card, "Opens the QR code scanner");
             card.GestureRecognizers.Add(new TapGestureRecognizer { Command = command });
             return card;
         }
