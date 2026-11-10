@@ -29,8 +29,8 @@ namespace CampusGuide.Views.Search
             var searchEntry = new Entry
             {
                 Placeholder = "Search locations by name, type, building...",
-                PlaceholderColor = Color.Parse("#8A8A8A"),
-                TextColor = Color.Parse("#333333"),
+                PlaceholderColor = Themed("#8A8A8A", "#9AA0A6"),
+                TextColor = Themed("#333333", "#F1F1F1"),
                 FontSize = 16,
                 BackgroundColor = Colors.Transparent,
                 VerticalOptions = LayoutOptions.Center,
@@ -44,7 +44,7 @@ namespace CampusGuide.Views.Search
             {
                 Text = "\U0001F50D",
                 FontSize = 16,
-                TextColor = Color.Parse("#8A8A8A"),
+                TextColor = Themed("#8A8A8A", "#9AA0A6"),
                 VerticalOptions = LayoutOptions.Center
             };
 
@@ -52,9 +52,8 @@ namespace CampusGuide.Views.Search
             {
                 Text = "\u2715",
                 FontSize = 16,
-                TextColor = Color.Parse("#00695C"),
-                VerticalOptions = LayoutOptions.Center,
-                Padding = new Thickness(8, 0, 0, 0)
+                TextColor = Themed("#00695C", "#4DB6AC"),
+                VerticalOptions = LayoutOptions.Center
             };
             SemanticProperties.SetDescription(clearIcon, "Clear search");
             clearIcon.GestureRecognizers.Add(new TapGestureRecognizer
@@ -80,7 +79,7 @@ namespace CampusGuide.Views.Search
 
             var searchField = new Border
             {
-                BackgroundColor = Color.Parse("#F1F3F4"),
+                BackgroundColor = Themed("#F1F3F4", "#2C2F33"),
                 Stroke = Colors.Transparent,
                 StrokeShape = new RoundRectangle { CornerRadius = 24 },
                 Padding = new Thickness(16, 10),
@@ -104,7 +103,7 @@ namespace CampusGuide.Views.Search
             var errorLabel = new Label
             {
                 FontSize = 14,
-                TextColor = Color.Parse("#FF6B6B"),
+                TextColor = Themed("#D32F2F", "#FF8A80"),
                 HorizontalOptions = LayoutOptions.Center,
                 HorizontalTextAlignment = TextAlignment.Center
             };
@@ -147,6 +146,10 @@ namespace CampusGuide.Views.Search
             Appearing += OnPageAppearing;
         }
 
+        private static bool IsDark => Application.Current?.RequestedTheme == AppTheme.Dark;
+
+        private static Color Themed(string light, string dark) => Color.Parse(IsDark ? dark : light);
+
         private void OnPageAppearing(object? sender, EventArgs e)
         {
             Debug.WriteLine("SearchPage appeared, loading data...");
@@ -167,10 +170,10 @@ namespace CampusGuide.Views.Search
                 StrokeShape = new RoundRectangle { CornerRadius = 16 },
                 Padding = new Thickness(18, 16),
                 Margin = new Thickness(0, 8, 0, 8),
-                BackgroundColor = Color.Parse("#FFFFFF"),
+                BackgroundColor = Themed("#FFFFFF", "#1E1F22"),
                 Shadow = new Shadow
                 {
-                    Brush = new SolidColorBrush(Color.Parse("#000000")),
+                    Brush = new SolidColorBrush(Colors.Black),
                     Offset = new Point(0, 2),
                     Radius = 8,
                     Opacity = 0.12f
@@ -208,7 +211,7 @@ namespace CampusGuide.Views.Search
             { 
                 FontAttributes = FontAttributes.Bold,
                 FontSize = 16,
-                TextColor = Color.Parse("#333333")
+                TextColor = Themed("#333333", "#F1F1F1")
             };
             nameLabel.SetBinding(Label.TextProperty, "Name");
             nameTypeStack.Add(nameLabel);
@@ -217,13 +220,13 @@ namespace CampusGuide.Views.Search
             {
                 FontSize = 11,
                 FontAttributes = FontAttributes.Bold,
-                TextColor = Color.Parse("#00695C"),
+                TextColor = Themed("#00695C", "#4DB6AC"),
                 VerticalOptions = LayoutOptions.Center
             };
             typeLabel.SetBinding(Label.TextProperty, "Type");
             var typePill = new Border
             {
-                BackgroundColor = Color.Parse("#E0F2F1"),
+                BackgroundColor = Themed("#E0F2F1", "#1F3B38"),
                 Stroke = Colors.Transparent,
                 StrokeShape = new RoundRectangle { CornerRadius = 10 },
                 Padding = new Thickness(8, 2),
@@ -238,7 +241,7 @@ namespace CampusGuide.Views.Search
             var descriptionLabel = new Label
             {
                 FontSize = 13,
-                TextColor = Color.Parse("#6B6B6B"),
+                TextColor = Themed("#6B6B6B", "#B0B3B8"),
                 LineBreakMode = LineBreakMode.WordWrap
             };
             descriptionLabel.SetBinding(Label.TextProperty, "Description");
@@ -249,7 +252,7 @@ namespace CampusGuide.Views.Search
             var buildingLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Color.Parse("#666666"),
+                TextColor = Themed("#666666", "#B0B3B8"),
                 VerticalOptions = LayoutOptions.Center
             };
             buildingLabel.SetBinding(Label.TextProperty, new Binding { Path = "Building" });
@@ -269,7 +272,7 @@ namespace CampusGuide.Views.Search
             var floorLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Color.Parse("#666666"),
+                TextColor = Themed("#666666", "#B0B3B8"),
                 VerticalOptions = LayoutOptions.Center
             };
             floorLabel.SetBinding(Label.TextProperty, new Binding { Path = "Floor" });
