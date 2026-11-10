@@ -33,6 +33,32 @@ namespace CampusGuide.ViewModels
         }
 
         [RelayCommand]
+        public async Task GoToMap()
+        {
+            try
+            {
+                await Shell.Current.GoToAsync("//map");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Navigation to Map failed: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
+        public async Task GoToSearch()
+        {
+            try
+            {
+                await Shell.Current.GoToAsync("//search");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Navigation to Search failed: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
         public async Task GoToFavorites()
         {
             try
