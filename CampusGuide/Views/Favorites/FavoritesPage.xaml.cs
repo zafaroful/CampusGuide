@@ -110,31 +110,62 @@ namespace CampusGuide.Views.Favorites
             // Empty state
             var emptyStack = new VerticalStackLayout
             {
-                Spacing = 15,
-                Padding = 40,
+                Spacing = 12,
+                Padding = new Thickness(32, 40),
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center
             };
-            emptyStack.Add(new Label
+
+            var emptyIconCircle = new Border
             {
-                Text = "❤️",
-                FontSize = 48,
-                HorizontalOptions = LayoutOptions.Center
-            });
+                StrokeShape = new RoundRectangle { CornerRadius = 40 },
+                Stroke = Colors.Transparent,
+                BackgroundColor = Themed("#FFEBEE", "#4A2A2A"),
+                WidthRequest = 80,
+                HeightRequest = 80,
+                HorizontalOptions = LayoutOptions.Center,
+                Content = new Label
+                {
+                    Text = "\u2764\uFE0F",
+                    FontSize = 36,
+                    HorizontalOptions = LayoutOptions.Center,
+                    VerticalOptions = LayoutOptions.Center
+                }
+            };
+            emptyStack.Add(emptyIconCircle);
+
             emptyStack.Add(new Label
             {
                 Text = "No Favorites Yet",
                 FontSize = 20,
                 FontAttributes = FontAttributes.Bold,
-                HorizontalTextAlignment = TextAlignment.Center
+                HorizontalTextAlignment = TextAlignment.Center,
+                TextColor = Themed("#333333", "#F1F1F1"),
+                Margin = new Thickness(0, 8, 0, 0)
             });
             emptyStack.Add(new Label
             {
                 Text = "Save your favorite locations from the map or search to see them here.",
                 FontSize = 14,
-                TextColor = Colors.Gray,
-                HorizontalTextAlignment = TextAlignment.Center
+                TextColor = Themed("#6B6B6B", "#B0B3B8"),
+                HorizontalTextAlignment = TextAlignment.Center,
+                LineBreakMode = LineBreakMode.WordWrap,
+                MaximumWidthRequest = 300
             });
+
+            var browseButton = new Button
+            {
+                Text = "Browse locations",
+                BackgroundColor = Themed("#00695C", "#4DB6AC"),
+                TextColor = Themed("#FFFFFF", "#121212"),
+                CornerRadius = 12,
+                Padding = new Thickness(24, 10),
+                Margin = new Thickness(0, 16, 0, 0),
+                HorizontalOptions = LayoutOptions.Center
+            };
+            SemanticProperties.SetDescription(browseButton, "Browse campus locations");
+            browseButton.Clicked += async (s, e) => await Shell.Current.GoToAsync("//search");
+            emptyStack.Add(browseButton);
 
             var emptyView = new VerticalStackLayout { emptyStack };
             emptyView.SetBinding(IsVisibleProperty, new Binding("IsEmpty", source: _viewModel));
@@ -176,14 +207,17 @@ namespace CampusGuide.Views.Favorites
             Content = refreshView;
         }
 
+        private static bool IsDark => Application.Current?.RequestedTheme == AppTheme.Dark;
+
+        private static Color Themed(string light, string dark) => Color.Parse(IsDark ? dark : light);
+
         private VerticalStackLayout CreateFavoriteTemplate()
         {
             var container = new VerticalStackLayout
             {
-                Padding = new Thickness(15, 12),
-                Spacing = 10
+                Padding = new Thickness(18, 16),
+                Spacing = 8
             };
-            container.BackgroundColor = Colors.White;
 
             // Top row with name and remove button
             var topRow = new HorizontalStackLayout
@@ -199,7 +233,8 @@ namespace CampusGuide.Views.Favorites
                 FontAttributes = FontAttributes.Bold,
                 LineBreakMode = LineBreakMode.WordWrap,
                 VerticalOptions = LayoutOptions.Center,
-                HorizontalOptions = LayoutOptions.FillAndExpand
+                HorizontalOptions = LayoutOptions.FillAndExpand,
+                TextColor = Themed("#333333", "#F1F1F1")
             };
             nameLabel.SetBinding(Label.TextProperty, "Name");
             topRow.Add(nameLabel);
@@ -210,9 +245,9 @@ namespace CampusGuide.Views.Favorites
                 Text = "✕ Remove",
                 Padding = new Thickness(12, 6),
                 FontSize = 12,
-                BackgroundColor = Color.FromArgb("#FF6B6B"),
-                TextColor = Colors.White,
-                CornerRadius = 6
+                BackgroundColor = Themed("#FFEBEE", "#4A2A2A"),
+                TextColor = Themed("#D32F2F", "#FF8A80"),
+                CornerRadius = 12
             };
             SemanticProperties.SetDescription(removeButton, "Remove from favorites");
             removeButton.SetBinding(Button.CommandProperty, new Binding("RemoveFavoriteCommand", source: _viewModel));
@@ -224,35 +259,34 @@ namespace CampusGuide.Views.Favorites
             // Location ID (for reference)
             var idLabel = new Label
             {
-                FontSize = 12,
-                TextColor = Colors.Gray
+                FontSize = 13,
+                TextColor = Themed("#6B6B6B", "#B0B3B8")
             };
             idLabel.SetBinding(Label.TextProperty, new Binding("LocationId", stringFormat: "ID: {0}"));
             container.Add(idLabel);
 
-            // Border effect
-            var border = new Border
+            var card = new Border
             {
                 Content = container,
-                StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(10) },
-                Stroke = Colors.LightGray,
-                StrokeThickness = 1,
-                Padding = 0,
-                Margin = new Thickness(12, 8),
+                StrokeShape = new RoundRectangle { CornerRadius = 16 },
+                Stroke = Colors.Transparent,
+                Padding = new Thickness(0),
+                Margin = new Thickness(20, 8, 20, 8),
+                BackgroundColor = Themed("#FFFFFF", "#1E1F22"),
                 Shadow = new Shadow
                 {
-                    Brush = Colors.Black,
+                    Brush = new SolidColorBrush(Colors.Black),
                     Offset = new Point(0, 2),
-                    Opacity = 0.1f,
-                    Radius = 4
+                    Opacity = 0.12f,
+                    Radius = 8
                 }
             };
 
             var tapGesture = new TapGestureRecognizer();
             tapGesture.Tapped += OnFavoriteCardTapped;
-            border.GestureRecognizers.Add(tapGesture);
+            card.GestureRecognizers.Add(tapGesture);
 
-            return new VerticalStackLayout { border };
+            return new VerticalStackLayout { card };
         }
 
         private static async void OnFavoriteCardTapped(object? sender, TappedEventArgs e)
