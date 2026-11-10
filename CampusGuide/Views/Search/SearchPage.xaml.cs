@@ -225,11 +225,10 @@ namespace CampusGuide.Views.Search
             grid.Add(nameTypeStack, 0, 0);
 
             // Description
-            var descriptionLabel = new Label 
-            { 
+            var descriptionLabel = new Label
+            {
                 FontSize = 13,
-                Opacity = 0.75,
-                TextColor = Color.Parse("#555555"),
+                TextColor = Color.Parse("#6B6B6B"),
                 LineBreakMode = LineBreakMode.WordWrap
             };
             descriptionLabel.SetBinding(Label.TextProperty, "Description");
@@ -240,22 +239,42 @@ namespace CampusGuide.Views.Search
             var buildingLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Color.Parse("#666666")
+                TextColor = Color.Parse("#666666"),
+                VerticalOptions = LayoutOptions.Center
             };
-            buildingLabel.SetBinding(Label.TextProperty, new Binding { Path = "Building", StringFormat = "📍 Building: {0}" });
-            Grid.SetRow(buildingLabel, 2);
-            grid.Add(buildingLabel, 0, 2);
+            buildingLabel.SetBinding(Label.TextProperty, new Binding { Path = "Building" });
+            var buildingRow = new HorizontalStackLayout
+            {
+                Spacing = 6,
+                Children =
+                {
+                    new Label { Text = "\U0001F4CD", FontSize = 12, VerticalOptions = LayoutOptions.Center },
+                    buildingLabel
+                }
+            };
+            Grid.SetRow(buildingRow, 2);
+            grid.Add(buildingRow, 0, 2);
 
             // Floor (if available)
             var floorLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Color.Parse("#666666")
+                TextColor = Color.Parse("#666666"),
+                VerticalOptions = LayoutOptions.Center
             };
-            floorLabel.SetBinding(Label.TextProperty, new Binding { Path = "Floor", StringFormat = "🏢 Floor: {0}" });
-            floorLabel.SetBinding(IsVisibleProperty, new Binding("Floor", converter: new NotNullOrEmptyConverter()));
-            Grid.SetRow(floorLabel, 3);
-            grid.Add(floorLabel, 0, 3);
+            floorLabel.SetBinding(Label.TextProperty, new Binding { Path = "Floor" });
+            var floorRow = new HorizontalStackLayout
+            {
+                Spacing = 6,
+                Children =
+                {
+                    new Label { Text = "\U0001F3E2", FontSize = 12, VerticalOptions = LayoutOptions.Center },
+                    floorLabel
+                }
+            };
+            floorRow.SetBinding(IsVisibleProperty, new Binding("Floor", converter: new NotNullOrEmptyConverter()));
+            Grid.SetRow(floorRow, 3);
+            grid.Add(floorRow, 0, 3);
 
             frame.Content = grid;
             return frame;
