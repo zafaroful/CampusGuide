@@ -104,16 +104,6 @@ namespace CampusGuide.Views.Map
                 Spacing = 10
             };
 
-            var titleLabel = new Label
-            {
-                Text = "Campus Map",
-                FontSize = 24,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Colors.White,
-                HorizontalOptions = LayoutOptions.Center,
-                InputTransparent = true  // Don't intercept touches
-            };
-            headerLayout.Add(titleLabel);
 
             var mapErrorLabel = new Label
             {
