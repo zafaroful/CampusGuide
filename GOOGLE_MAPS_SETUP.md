@@ -94,7 +94,7 @@ You'll need to run the keytool command with your release keystore:
 ```xml
 <application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true">
   <meta-data android:name="com.google.android.geo.API_KEY" 
-			 android:value="AIzaSyDemoKey1234567890_YourActualKeyHere" />
+			 android:value="YOUR_GOOGLE_MAPS_API_KEY" />
 </application>
 ```
 
