@@ -136,7 +136,7 @@ namespace CampusGuide.Views.Favorites
             });
 
             var emptyView = new VerticalStackLayout { emptyStack };
-            emptyView.SetBinding(IsVisibleProperty, new Binding("HasFavorites", source: _viewModel, converter: new InvertedBooleanConverter()));
+            emptyView.SetBinding(IsVisibleProperty, new Binding("IsEmpty", source: _viewModel));
             contentGrid.Add(emptyView);
 
             // Error message

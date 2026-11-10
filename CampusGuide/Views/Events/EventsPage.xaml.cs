@@ -137,7 +137,7 @@ namespace CampusGuide.Views.Events
             });
 
             var emptyView = new VerticalStackLayout { emptyStack };
-            emptyView.SetBinding(IsVisibleProperty, new Binding("HasEvents", source: _viewModel, converter: new InvertedBooleanConverter()));
+            emptyView.SetBinding(IsVisibleProperty, new Binding("IsEmpty", source: _viewModel));
             contentGrid.Add(emptyView);
 
             // Error message

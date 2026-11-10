@@ -24,6 +24,9 @@ namespace CampusGuide.ViewModels
         [ObservableProperty]
         private bool hasFavorites = false;
 
+        [ObservableProperty]
+        private bool isEmpty = false;
+
         public FavoritesViewModel()
         {
             _favoritesService = ServiceHelper.GetService<IFavoritesService>() ?? throw new InvalidOperationException("IFavoritesService not registered");
@@ -67,6 +70,7 @@ namespace CampusGuide.ViewModels
                     }
 
                     HasFavorites = Favorites.Count > 0;
+                    IsEmpty = !HasFavorites;
                     System.Diagnostics.Debug.WriteLine($"FavoritesViewModel: Loaded {Favorites.Count} favorites");
                 });
             }
@@ -77,6 +81,7 @@ namespace CampusGuide.ViewModels
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
                     HasFavorites = false;
+                    IsEmpty = false;
                 });
             }
             finally

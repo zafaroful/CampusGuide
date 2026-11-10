@@ -22,6 +22,9 @@ namespace CampusGuide.ViewModels
         [ObservableProperty]
         private bool hasEvents = false;
 
+        [ObservableProperty]
+        private bool isEmpty = false;
+
         public EventsViewModel()
         {
             _firestoreService = ServiceHelper.GetService<IFirestoreService>() ?? throw new InvalidOperationException("IFirestoreService not registered");
@@ -74,6 +77,7 @@ namespace CampusGuide.ViewModels
                     }
 
                     HasEvents = Events.Count > 0;
+                    IsEmpty = !HasEvents;
                     System.Diagnostics.Debug.WriteLine($"EventsViewModel: Loaded {Events.Count} events");
                 });
             }
@@ -84,6 +88,7 @@ namespace CampusGuide.ViewModels
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
                     HasEvents = false;
+                    IsEmpty = false;
                 });
             }
             finally

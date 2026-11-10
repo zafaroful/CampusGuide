@@ -6,6 +6,26 @@ namespace CampusGuide.ViewModels
 {
     public partial class HomeViewModel : BaseViewModel
     {
+        [ObservableProperty]
+        private bool isLoading = true;
+
+        [ObservableProperty]
+        private bool isEmpty = false;
+
+        public HomeViewModel()
+        {
+            _ = InitializeAsync();
+        }
+
+        private async Task InitializeAsync()
+        {
+            IsLoading = true;
+            IsEmpty = false;
+            await Task.Delay(300);
+            IsLoading = false;
+            IsEmpty = true;
+        }
+
         [RelayCommand]
         public async Task GoToScanner()
         {

@@ -35,6 +35,21 @@ namespace CampusGuide.Views.Home
                 eventsButton.Clicked += async (s, e) => await _viewModel.GoToEvents();
                 layout.Add(eventsButton);
 
+                var statusStack = new VerticalStackLayout { Spacing = 10, Margin = new Thickness(0, 20, 0, 0), HorizontalOptions = LayoutOptions.Center };
+                var homeLoadingStack = new VerticalStackLayout { Spacing = 10, HorizontalOptions = LayoutOptions.Center };
+                homeLoadingStack.Add(new ActivityIndicator { IsRunning = true, Color = Colors.Blue });
+                homeLoadingStack.Add(new Label { Text = "Loading campus updates...", HorizontalTextAlignment = TextAlignment.Center });
+                homeLoadingStack.SetBinding(IsVisibleProperty, new Binding("IsLoading", source: _viewModel));
+                statusStack.Add(homeLoadingStack);
+
+                var homeEmptyStack = new VerticalStackLayout { Spacing = 5, HorizontalOptions = LayoutOptions.Center };
+                homeEmptyStack.Add(new Label { Text = "No campus updates right now", FontAttributes = FontAttributes.Bold, HorizontalTextAlignment = TextAlignment.Center });
+                homeEmptyStack.Add(new Label { Text = "Check back later for announcements.", FontSize = 14, TextColor = Colors.Gray, HorizontalTextAlignment = TextAlignment.Center });
+                homeEmptyStack.SetBinding(IsVisibleProperty, new Binding("IsEmpty", source: _viewModel));
+                statusStack.Add(homeEmptyStack);
+
+                layout.Add(statusStack);
+
                 Content = new ScrollView { Content = layout };
                 Title = "Home";
                 System.Diagnostics.Debug.WriteLine("✓ HomePage layout built successfully");
