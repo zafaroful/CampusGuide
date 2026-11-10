@@ -215,12 +215,22 @@ namespace CampusGuide.Views.Search
 
             var typeLabel = new Label
             {
-                FontSize = 12,
+                FontSize = 11,
+                FontAttributes = FontAttributes.Bold,
                 TextColor = Color.Parse("#00695C"),
-                FontAttributes = FontAttributes.Bold
+                VerticalOptions = LayoutOptions.Center
             };
             typeLabel.SetBinding(Label.TextProperty, "Type");
-            nameTypeStack.Add(typeLabel);
+            var typePill = new Border
+            {
+                BackgroundColor = Color.Parse("#E0F2F1"),
+                Stroke = Colors.Transparent,
+                StrokeShape = new RoundRectangle { CornerRadius = 10 },
+                Padding = new Thickness(8, 2),
+                VerticalOptions = LayoutOptions.Center,
+                Content = typeLabel
+            };
+            nameTypeStack.Add(typePill);
 
             grid.Add(nameTypeStack, 0, 0);
 
