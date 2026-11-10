@@ -27,6 +27,9 @@ namespace CampusGuide.ViewModels
         [ObservableProperty]
         private bool isEmpty = false;
 
+        [ObservableProperty]
+        private string countText = string.Empty;
+
         public FavoritesViewModel()
         {
             _favoritesService = ServiceHelper.GetService<IFavoritesService>() ?? throw new InvalidOperationException("IFavoritesService not registered");
@@ -71,6 +74,7 @@ namespace CampusGuide.ViewModels
 
                     HasFavorites = Favorites.Count > 0;
                     IsEmpty = !HasFavorites;
+                    UpdateCountText();
                     System.Diagnostics.Debug.WriteLine($"FavoritesViewModel: Loaded {Favorites.Count} favorites");
                 });
             }
@@ -113,6 +117,7 @@ namespace CampusGuide.ViewModels
                     }
 
                     HasFavorites = Favorites.Count > 0;
+                    UpdateCountText();
                     System.Diagnostics.Debug.WriteLine($"FavoritesViewModel: Favorite removed, {Favorites.Count} remaining");
                 });
             }
@@ -154,6 +159,11 @@ namespace CampusGuide.ViewModels
                 System.Diagnostics.Debug.WriteLine($"FavoritesViewModel: Error adding favorite: {ex.Message}");
                 ErrorMessage = $"Failed to add favorite: {ex.Message}";
             }
+        }
+
+        private void UpdateCountText()
+        {
+            CountText = Favorites.Count == 1 ? "1 saved place" : $"{Favorites.Count} saved places";
         }
 
         /// <summary>

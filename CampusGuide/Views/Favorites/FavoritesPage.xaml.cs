@@ -49,11 +49,12 @@ namespace CampusGuide.Views.Favorites
             // Header
             var headerLabel = new Label
             {
-                Text = "Saved Locations",
-                FontSize = 24,
-                FontAttributes = FontAttributes.Bold,
-                Margin = new Thickness(20, 15, 20, 10)
+                FontSize = 14,
+                TextColor = Colors.Gray,
+                Margin = new Thickness(20, 12, 20, 8)
             };
+            headerLabel.SetBinding(Label.TextProperty, new Binding(nameof(FavoritesViewModel.CountText), source: _viewModel));
+            headerLabel.SetBinding(IsVisibleProperty, new Binding(nameof(FavoritesViewModel.HasFavorites), source: _viewModel));
             mainGrid.Add(headerLabel, 0, 0);
 
             // Content area (Grid for layering)
