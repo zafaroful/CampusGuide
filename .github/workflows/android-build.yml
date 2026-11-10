@@ -1,0 +1,33 @@
+name: Android build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install .NET MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Write Google Maps key from secret
+        shell: pwsh
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          [System.IO.File]::WriteAllText("CampusGuide/google-maps.key", $env:GOOGLE_MAPS_API_KEY)
+
+      - name: Build Android app
+        run: dotnet build CampusGuide/CampusGuide.csproj -f net10.0-android -c Release
