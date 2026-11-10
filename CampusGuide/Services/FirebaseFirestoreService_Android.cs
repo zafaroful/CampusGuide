@@ -34,6 +34,36 @@ namespace CampusGuide.Services
         {
             throw new NotImplementedException();
         }
+
+        public Task<bool> AddLocationAsync(LocationModel location)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> AddLocationsAsync(List<LocationModel> locations)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> AddEventsAsync(List<EventItem> events)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> AddNotificationsAsync(List<NotificationItem> notifications)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> DeleteLocationAsync(string id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> DeleteAllLocationsAsync()
+        {
+            throw new NotImplementedException();
+        }
     }
 #endif
 }

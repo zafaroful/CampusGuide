@@ -1,6 +1,7 @@
 using Microsoft.Maui.Controls;
 using CampusGuide.Models;
 using CampusGuide.Services;
+using CampusGuide.ViewModels.Search;
 using System.Diagnostics;
 using Microsoft.Maui.Layouts;
 
@@ -65,6 +66,9 @@ namespace CampusGuide.Views.Map
                 if (_firestoreService != null && !string.IsNullOrEmpty(_locationId))
                 {
                     _location = await _firestoreService.GetLocationByIdAsync(_locationId);
+
+                    _location ??= ServiceHelper.GetService<SearchViewModel>()?.AllLocations
+                        .FirstOrDefault(l => l.Id == _locationId);
 
                     if (_location is not null)
                     {
@@ -314,6 +318,21 @@ namespace CampusGuide.Views.Map
                 // Add spacing before button
                 layout.Add(new BoxView { HeightRequest = 20, IsVisible = false });
 
+                var viewOnMapButton = new Button
+                {
+                    Text = "View on Map",
+                    TextColor = Color.Parse("#FFFFFF"),
+                    Background = Color.Parse("#7B61FF"),
+                    FontSize = 14,
+                    FontAttributes = FontAttributes.Bold,
+                    Padding = new Thickness(20, 12),
+                    CornerRadius = 8,
+                    Margin = new Thickness(0, 20, 0, 0)
+                };
+                SemanticProperties.SetDescription(viewOnMapButton, "View this location on the campus map");
+                viewOnMapButton.Clicked += async (s, e) => await Shell.Current.GoToAsync($"//map?focusId={Uri.EscapeDataString(_location.Id)}");
+                layout.Add(viewOnMapButton);
+
                 // Go Back Button
                 var backButton = new Button
                 {
@@ -324,8 +343,9 @@ namespace CampusGuide.Views.Map
                     FontAttributes = FontAttributes.Bold,
                     Padding = new Thickness(20, 12),
                     CornerRadius = 8,
-                    Margin = new Thickness(0, 20, 0, 0)
+                    Margin = new Thickness(0, 10, 0, 0)
                 };
+                SemanticProperties.SetDescription(backButton, "Go back to the previous page");
                 backButton.Clicked += async (s, e) => await Shell.Current.GoToAsync("..");
                 layout.Add(backButton);
 
@@ -367,6 +387,7 @@ namespace CampusGuide.Views.Map
                     CornerRadius = 8,
                     Margin = new Thickness(0, 40, 0, 0)
                 };
+                SemanticProperties.SetDescription(backButton, "Go back to the map");
                 backButton.Clicked += async (s, e) => await Shell.Current.GoToAsync("..");
                 layout.Add(backButton);
 

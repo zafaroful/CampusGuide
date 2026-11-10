@@ -19,14 +19,19 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
+		<!-- Disable R8 minification for native libraries in Android builds -->
+		<AndroidEnableMultiDex>true</AndroidEnableMultiDex>
+		<AndroidLinkMode>None</AndroidLinkMode>
+		<PublishTrimmed>false</PublishTrimmed>
+
 		<!-- Enable XAML source generation for faster build times and improved performance.
-			 This generates C# code from XAML at compile time instead of runtime inflation.
-			 To disable, remove this line.
-			 For individual files, you can override by setting Inflator metadata:
-			   <MauiXaml Update="MyPage.xaml" Inflator="Default" /> (reverts to defaults: Runtime for Debug, XamlC for Release)
-			   <MauiXaml Update="MyPage.xaml" Inflator="Runtime" /> (force runtime inflation)
-			 Currently disabled due to source-generation issues with newly created XAML files.
-			 <MauiXamlInflator>SourceGen</MauiXamlInflator> -->
+		 This generates C# code from XAML at compile time instead of runtime inflation.
+		 To disable, remove this line.
+		 For individual files, you can override by setting Inflator metadata:
+		   <MauiXaml Update="MyPage.xaml" Inflator="Default" /> (reverts to defaults: Runtime for Debug, XamlC for Release)
+		   <MauiXaml Update="MyPage.xaml" Inflator="Runtime" /> (force runtime inflation)
+		 Currently disabled due to source-generation issues with newly created XAML files.
+		 <MauiXamlInflator>SourceGen</MauiXamlInflator> -->
 		<MauiXamlInflator>Runtime</MauiXamlInflator>
 
 		<!-- Display name -->
@@ -66,12 +71,16 @@
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 
+		<!-- Floor Plan Images -->
+		<MauiAsset Include="Resources\FloorPlans\**" LogicalName="floorplans/%(Filename)%(Extension)" />
+
 		<!-- Google Services Configuration for Firebase -->
 		<GoogleServicesJson Include="Platforms\Android\google-services.json" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		<PackageReference Include="Microsoft.Maui.Controls.Maps" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 		<!-- MVVM toolkit -->
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.0" />
@@ -80,5 +89,24 @@
 		<!-- Firebase / Firestore Android bindings (native Android only) -->
 		<PackageReference Include="Xamarin.Firebase.Firestore" Version="124.0.1" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiXaml Update="Views\AboutPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\FloorPlanPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	</ItemGroup>
+
+	<!-- Debug Configuration: Disable AOT and Trimming for faster builds -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<PublishTrimmed>false</PublishTrimmed>
+		<RunAOTCompilation>false</RunAOTCompilation>
+		<AndroidUseAapt2>true</AndroidUseAapt2>
+		<AndroidDebugKeyStore>true</AndroidDebugKeyStore>
+		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+		<AndroidFastDeploymentType>Assemblies</AndroidFastDeploymentType>
+	</PropertyGroup>
 
 </Project>

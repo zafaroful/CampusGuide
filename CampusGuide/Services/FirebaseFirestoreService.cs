@@ -408,6 +408,368 @@ namespace CampusGuide.Services
             dateTime = dateTime.AddSeconds(seconds).ToLocalTime();
             return dateTime;
         }
+
+        /// <summary>
+        /// Adds a single location to Firestore.
+        /// </summary>
+        public async Task<bool> AddLocationAsync(LocationModel location)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(location?.Id))
+                {
+                    Log.Error(TAG, "Cannot add location with null or empty ID");
+                    return false;
+                }
+
+                var tcs = new TaskCompletionSource<bool>();
+
+                var locationData = new Java.Util.HashMap();
+                locationData.Put("id", location.Id);
+                locationData.Put("name", location.Name ?? "");
+                locationData.Put("description", location.Description ?? "");
+                locationData.Put("type", location.Type ?? "");
+                locationData.Put("building", location.Building ?? "");
+                locationData.Put("floor", location.Floor ?? "");
+                locationData.Put("qrCodeId", location.QrCodeId ?? "");
+
+                // Add coordinates
+                var coordinates = new Java.Util.HashMap();
+                coordinates.Put("latitude", location.Coordinates?.Latitude ?? 0.0);
+                coordinates.Put("longitude", location.Coordinates?.Longitude ?? 0.0);
+                locationData.Put("coordinates", coordinates);
+
+                // Add images
+                var images = new Java.Util.ArrayList();
+                if (location.Images != null)
+                {
+                    foreach (var img in location.Images)
+                        images.Add(img);
+                }
+                locationData.Put("images", images);
+
+                // Add tags
+                var tags = new Java.Util.ArrayList();
+                if (location.Tags != null)
+                {
+                    foreach (var tag in location.Tags)
+                        tags.Add(tag);
+                }
+                locationData.Put("tags", tags);
+
+                GetFirestoreInstance()
+                    .Collection(LocationsCollection)
+                    .Document(location.Id)
+                    .Set(locationData)
+                    .AddOnSuccessListener(new SuccessListener(_ =>
+                    {
+                        Log.Debug(TAG, $"Location '{location.Name}' (ID: {location.Id}) added successfully");
+                        tcs.SetResult(true);
+                    }))
+                    .AddOnFailureListener(new FailureListener(ex =>
+                    {
+                        Log.Error(TAG, $"AddLocationAsync failed: {ex.Message}");
+                        tcs.SetResult(false);
+                    }));
+
+                return await tcs.Task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(TAG, $"AddLocationAsync exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Adds multiple locations to Firestore in batch.
+        /// </summary>
+        public async Task<bool> AddLocationsAsync(List<LocationModel> locations)
+        {
+            try
+            {
+                if (locations == null || locations.Count == 0)
+                {
+                    Log.Warn(TAG, "No locations to add");
+                    return true;
+                }
+
+                var tcs = new TaskCompletionSource<bool>();
+                var batch = GetFirestoreInstance().Batch();
+                var count = 0;
+
+                foreach (var location in locations)
+                {
+                    if (string.IsNullOrEmpty(location?.Id))
+                        continue;
+
+                    var locationData = new Java.Util.HashMap();
+                    locationData.Put("id", location.Id);
+                    locationData.Put("name", location.Name ?? "");
+                    locationData.Put("description", location.Description ?? "");
+                    locationData.Put("type", location.Type ?? "");
+                    locationData.Put("building", location.Building ?? "");
+                    locationData.Put("floor", location.Floor ?? "");
+                    locationData.Put("qrCodeId", location.QrCodeId ?? "");
+
+                    // Add coordinates
+                    var coordinates = new Java.Util.HashMap();
+                    coordinates.Put("latitude", location.Coordinates?.Latitude ?? 0.0);
+                    coordinates.Put("longitude", location.Coordinates?.Longitude ?? 0.0);
+                    locationData.Put("coordinates", coordinates);
+
+                    // Add images
+                    var images = new Java.Util.ArrayList();
+                    if (location.Images != null)
+                    {
+                        foreach (var img in location.Images)
+                            images.Add(img);
+                    }
+                    locationData.Put("images", images);
+
+                    // Add tags
+                    var tags = new Java.Util.ArrayList();
+                    if (location.Tags != null)
+                    {
+                        foreach (var tag in location.Tags)
+                            tags.Add(tag);
+                    }
+                    locationData.Put("tags", tags);
+
+                    batch.Set(GetFirestoreInstance().Collection(LocationsCollection).Document(location.Id), locationData);
+                    count++;
+                }
+
+                batch.Commit()
+                    .AddOnSuccessListener(new SuccessListener(_ =>
+                    {
+                        Log.Debug(TAG, $"Batch added {count} locations successfully");
+                        tcs.SetResult(true);
+                    }))
+                    .AddOnFailureListener(new FailureListener(ex =>
+                    {
+                        Log.Error(TAG, $"AddLocationsAsync batch failed: {ex.Message}");
+                        tcs.SetResult(false);
+                    }));
+
+                return await tcs.Task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(TAG, $"AddLocationsAsync exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Adds multiple events to Firestore in batch.
+        /// </summary>
+        public async Task<bool> AddEventsAsync(List<EventItem> events)
+        {
+            try
+            {
+                if (events == null || events.Count == 0)
+                {
+                    Log.Warn(TAG, "No events to add");
+                    return true;
+                }
+
+                var tcs = new TaskCompletionSource<bool>();
+                var batch = GetFirestoreInstance().Batch();
+                var count = 0;
+
+                foreach (var eventItem in events)
+                {
+                    if (string.IsNullOrEmpty(eventItem?.Id))
+                        continue;
+
+                    var eventData = new Java.Util.HashMap();
+                    eventData.Put("id", eventItem.Id);
+                    eventData.Put("title", eventItem.Title ?? "");
+                    eventData.Put("description", eventItem.Description ?? "");
+                    eventData.Put("locationId", eventItem.LocationId ?? "");
+                    eventData.Put("imageUrl", eventItem.ImageUrl ?? "");
+                    eventData.Put("isPublished", Java.Lang.Boolean.ValueOf(eventItem.IsPublished));
+                    eventData.Put("startTime", ToJavaDate(eventItem.StartTime));
+                    eventData.Put("endTime", ToJavaDate(eventItem.EndTime));
+
+                    var coordinates = new Java.Util.HashMap();
+                    coordinates.Put("latitude", eventItem.Coordinates?.Latitude ?? 0.0);
+                    coordinates.Put("longitude", eventItem.Coordinates?.Longitude ?? 0.0);
+                    eventData.Put("coordinates", coordinates);
+
+                    batch.Set(GetFirestoreInstance().Collection(EventsCollection).Document(eventItem.Id), eventData);
+                    count++;
+                }
+
+                batch.Commit()
+                    .AddOnSuccessListener(new SuccessListener(_ =>
+                    {
+                        Log.Debug(TAG, $"Batch added {count} events successfully");
+                        tcs.SetResult(true);
+                    }))
+                    .AddOnFailureListener(new FailureListener(ex =>
+                    {
+                        Log.Error(TAG, $"AddEventsAsync batch failed: {ex.Message}");
+                        tcs.SetResult(false);
+                    }));
+
+                return await tcs.Task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(TAG, $"AddEventsAsync exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Adds multiple notifications to Firestore in batch.
+        /// </summary>
+        public async Task<bool> AddNotificationsAsync(List<NotificationItem> notifications)
+        {
+            try
+            {
+                if (notifications == null || notifications.Count == 0)
+                {
+                    Log.Warn(TAG, "No notifications to add");
+                    return true;
+                }
+
+                var tcs = new TaskCompletionSource<bool>();
+                var batch = GetFirestoreInstance().Batch();
+                var count = 0;
+
+                foreach (var notification in notifications)
+                {
+                    if (string.IsNullOrEmpty(notification?.Id))
+                        continue;
+
+                    var notificationData = new Java.Util.HashMap();
+                    notificationData.Put("id", notification.Id);
+                    notificationData.Put("title", notification.Title ?? "");
+                    notificationData.Put("body", notification.Body ?? "");
+                    notificationData.Put("type", notification.Type ?? "");
+                    notificationData.Put("relatedEventId", notification.RelatedEventId ?? "");
+                    notificationData.Put("relatedLocationId", notification.RelatedLocationId ?? "");
+                    notificationData.Put("createdAt", ToJavaDate(notification.CreatedAt));
+
+                    batch.Set(GetFirestoreInstance().Collection(NotificationsCollection).Document(notification.Id), notificationData);
+                    count++;
+                }
+
+                batch.Commit()
+                    .AddOnSuccessListener(new SuccessListener(_ =>
+                    {
+                        Log.Debug(TAG, $"Batch added {count} notifications successfully");
+                        tcs.SetResult(true);
+                    }))
+                    .AddOnFailureListener(new FailureListener(ex =>
+                    {
+                        Log.Error(TAG, $"AddNotificationsAsync batch failed: {ex.Message}");
+                        tcs.SetResult(false);
+                    }));
+
+                return await tcs.Task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(TAG, $"AddNotificationsAsync exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static Java.Util.Date ToJavaDate(DateTime value)
+        {
+            return new Java.Util.Date(new DateTimeOffset(value.ToUniversalTime()).ToUnixTimeMilliseconds());
+        }
+
+        /// <summary>
+        /// Deletes a single location from Firestore.
+        /// </summary>
+        public async Task<bool> DeleteLocationAsync(string id)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(id))
+                {
+                    Log.Error(TAG, "Cannot delete location with null or empty ID");
+                    return false;
+                }
+
+                var tcs = new TaskCompletionSource<bool>();
+
+                GetFirestoreInstance()
+                    .Collection(LocationsCollection)
+                    .Document(id)
+                    .Delete()
+                    .AddOnSuccessListener(new SuccessListener(_ =>
+                    {
+                        Log.Debug(TAG, $"Location '{id}' deleted successfully");
+                        tcs.SetResult(true);
+                    }))
+                    .AddOnFailureListener(new FailureListener(ex =>
+                    {
+                        Log.Error(TAG, $"DeleteLocationAsync failed: {ex.Message}");
+                        tcs.SetResult(false);
+                    }));
+
+                return await tcs.Task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(TAG, $"DeleteLocationAsync exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Deletes all locations from Firestore.
+        /// Used for clearing old test data before re-seeding.
+        /// </summary>
+        public async Task<bool> DeleteAllLocationsAsync()
+        {
+            try
+            {
+                Log.Debug(TAG, "Deleting all locations from Firestore...");
+
+                var locations = await GetAllLocationsAsync().ConfigureAwait(false);
+                if (locations.Count == 0)
+                {
+                    Log.Debug(TAG, "No locations to delete");
+                    return true;
+                }
+
+                var tcs = new TaskCompletionSource<bool>();
+                var batch = GetFirestoreInstance().Batch();
+                var count = 0;
+
+                foreach (var location in locations)
+                {
+                    batch.Delete(GetFirestoreInstance().Collection(LocationsCollection).Document(location.Id));
+                    count++;
+                }
+
+                batch.Commit()
+                    .AddOnSuccessListener(new SuccessListener(_ =>
+                    {
+                        Log.Debug(TAG, $"✅ Deleted {count} locations successfully");
+                        tcs.SetResult(true);
+                    }))
+                    .AddOnFailureListener(new FailureListener(ex =>
+                    {
+                        Log.Error(TAG, $"DeleteAllLocationsAsync batch failed: {ex.Message}");
+                        tcs.SetResult(false);
+                    }));
+
+                return await tcs.Task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(TAG, $"DeleteAllLocationsAsync exception: {ex.Message}");
+                return false;
+            }
+        }
     }
 
     #region Firestore Callback Listeners
@@ -461,6 +823,12 @@ namespace CampusGuide.Services
         public Task<List<LocationModel>> SearchLocationsAsync(string query) => Task.FromResult(new List<LocationModel>());
         public Task<List<EventItem>> GetUpcomingEventsAsync() => Task.FromResult(new List<EventItem>());
         public Task<List<NotificationItem>> GetNotificationsAsync() => Task.FromResult(new List<NotificationItem>());
+        public Task<bool> AddLocationAsync(LocationModel location) => Task.FromResult(false);
+        public Task<bool> AddLocationsAsync(List<LocationModel> locations) => Task.FromResult(false);
+        public Task<bool> AddEventsAsync(List<EventItem> events) => Task.FromResult(false);
+        public Task<bool> AddNotificationsAsync(List<NotificationItem> notifications) => Task.FromResult(false);
+        public Task<bool> DeleteLocationAsync(string id) => Task.FromResult(false);
+        public Task<bool> DeleteAllLocationsAsync() => Task.FromResult(false);
     }
 #endif
 }

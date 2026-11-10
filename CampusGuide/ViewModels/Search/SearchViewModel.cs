@@ -22,6 +22,12 @@ namespace CampusGuide.ViewModels.Search
         [ObservableProperty]
         private string searchQuery = string.Empty;
 
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasError))]
+        private string errorMessage = string.Empty;
+
+        public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+
         private readonly IFirestoreService _firestoreService;
         private bool _dataLoaded = false;
 
@@ -47,6 +53,7 @@ namespace CampusGuide.ViewModels.Search
             {
                 new LocationModel 
                 { 
+                    Id = "lib-001",
                     Name = "Library", 
                     Type = "Building",
                     Description = "Main campus library", 
@@ -55,6 +62,7 @@ namespace CampusGuide.ViewModels.Search
                 },
                 new LocationModel 
                 { 
+                    Id = "student-center-001",
                     Name = "Student Center", 
                     Type = "Facility",
                     Description = "Central gathering place", 
@@ -63,6 +71,7 @@ namespace CampusGuide.ViewModels.Search
                 },
                 new LocationModel 
                 { 
+                    Id = "cafeteria-001",
                     Name = "Cafeteria", 
                     Type = "Food",
                     Description = "Main campus dining", 
@@ -90,6 +99,7 @@ namespace CampusGuide.ViewModels.Search
 
         partial void OnSearchQueryChanged(string oldValue, string newValue)
         {
+            Debug.WriteLine($"SearchViewModel: SearchQuery changed from '{oldValue}' to '{newValue}'");
             FilterResults(newValue);
         }
 
@@ -98,6 +108,7 @@ namespace CampusGuide.ViewModels.Search
             try
             {
                 IsLoading = true;
+                ErrorMessage = string.Empty;
                 Debug.WriteLine("SearchViewModel: Loading locations from Firestore...");
 
                 var locations = await _firestoreService.GetAllLocationsAsync();
@@ -122,10 +133,12 @@ namespace CampusGuide.ViewModels.Search
                 else
                 {
                     Debug.WriteLine("SearchViewModel: No locations found in Firestore");
+                    ErrorMessage = "No campus locations are available yet.";
                 }
             }
             catch (Exception ex)
             {
+                ErrorMessage = $"Failed to load locations: {ex.Message}";
                 Debug.WriteLine($"SearchViewModel: Error loading locations: {ex.Message}");
                 Debug.WriteLine($"SearchViewModel: StackTrace: {ex.StackTrace}");
             }
@@ -148,11 +161,13 @@ namespace CampusGuide.ViewModels.Search
                 return;
             }
 
+            var searchLower = query.ToLowerInvariant();
             var filteredLocations = AllLocations
-                .Where(l => l.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                            l.Description.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                            l.Building.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                            l.Type.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .Where(l => l.Name.ToLowerInvariant().Contains(searchLower) ||
+                            l.Description.ToLowerInvariant().Contains(searchLower) ||
+                            l.Building.ToLowerInvariant().Contains(searchLower) ||
+                            l.Type.ToLowerInvariant().Contains(searchLower) ||
+                            (l.Tags?.Any(tag => tag.ToLowerInvariant().Contains(searchLower)) ?? false))
                 .ToList();
 
             MainThread.BeginInvokeOnMainThread(() =>

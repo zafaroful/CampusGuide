@@ -1,4 +1,5 @@
 ﻿using Microsoft.Maui.Controls;
+using CampusGuide.Services;
 
 namespace CampusGuide
 {
@@ -11,13 +12,58 @@ namespace CampusGuide
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new AppShell());
+            System.Diagnostics.Debug.WriteLine("=== CampusGuide CreateWindow called ===");
+            try
+            {
+                var window = new Window(new AppShell());
+                System.Diagnostics.Debug.WriteLine("✓ Window and AppShell created");
+                return window;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"✗ CreateWindow failed: {ex.GetType().Name}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"  StackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         protected override void OnStart()
         {
             base.OnStart();
-            SetupExceptionHandlers();
+            System.Diagnostics.Debug.WriteLine("=== CampusGuide App OnStart ===");
+            try
+            {
+                SetupExceptionHandlers();
+                System.Diagnostics.Debug.WriteLine("✓ Exception handlers set up");
+                // Disabled: InitializeFirestoreData();  // Skip Firebase init for testing without config
+                System.Diagnostics.Debug.WriteLine("✓ OnStart completed successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"✗ OnStart failed: {ex.GetType().Name}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"  StackTrace: {ex.StackTrace}");
+                HandleException(ex, "OnStart");
+            }
+        }
+
+        private void InitializeFirestoreData()
+        {
+            // Seed Firestore with test data if needed (fire and forget, don't block UI)
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    var seeder = ServiceHelper.GetService<FirestoreDataSeeder>();
+                    if (seeder != null)
+                    {
+                        await seeder.SeedDataIfEmptyAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    HandleException(ex, "InitializeFirestoreData");
+                }
+            });
         }
 
         private void SetupExceptionHandlers()

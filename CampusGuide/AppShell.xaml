@@ -8,17 +8,26 @@
     xmlns:map="clr-namespace:CampusGuide.Views.Map"
     xmlns:search="clr-namespace:CampusGuide.Views.Search"
     xmlns:notifications="clr-namespace:CampusGuide.Views.Notifications"
+    xmlns:favorites="clr-namespace:CampusGuide.Views.Favorites"
+    xmlns:events="clr-namespace:CampusGuide.Views.Events"
+    xmlns:views="clr-namespace:CampusGuide.Views"
     Title="CampusGuide">
 
     <TabBar>
         <ShellContent Title="Home" Icon="home.png" ContentTemplate="{DataTemplate home:HomePage}" Route="home" />
         <ShellContent Title="Map" Icon="map.png" ContentTemplate="{DataTemplate map:CampusMapPage}" Route="map" />
         <ShellContent Title="Search" Icon="search.png" ContentTemplate="{DataTemplate search:SearchPage}" Route="search" />
-        <ShellContent Title="Alerts" Icon="alert.png" ContentTemplate="{DataTemplate notifications:NotificationsPage}" Route="alerts" />
+        <ShellContent Title="Events" Icon="alert.png" ContentTemplate="{DataTemplate events:EventsPage}" Route="events" />
+        <ShellContent Title="Favorites" Icon="favorite.png" ContentTemplate="{DataTemplate favorites:FavoritesPage}" Route="favorites" />
+        <ShellContent Title="Alerts" Icon="bell.png" ContentTemplate="{DataTemplate notifications:NotificationsPage}" Route="alerts" />
+        <ShellContent Title="About" Icon="info.png" ContentTemplate="{DataTemplate views:AboutPage}" Route="about" />
     </TabBar>
 
     <!-- QR Scanner page -->
     <ShellContent Route="scanner" ContentTemplate="{DataTemplate home:QRScannerPage}" />
+
+    <!-- Floor Plan page -->
+    <ShellContent Route="floorplan" ContentTemplate="{DataTemplate map:FloorPlanPage}" />
 
 </Shell>
 

@@ -15,6 +15,9 @@ namespace CampusGuide.ViewModels
         private ObservableCollection<NotificationItem> notifications = new();
 
         [ObservableProperty]
+        private ObservableCollection<NotificationItem> filteredNotifications = new();
+
+        [ObservableProperty]
         private bool isLoading = false;
 
         [ObservableProperty]
@@ -22,6 +25,11 @@ namespace CampusGuide.ViewModels
 
         [ObservableProperty]
         private bool hasNotifications = false;
+
+        [ObservableProperty]
+        private bool hasFilteredNotifications = false;
+
+        private string? _currentFilter = null;
 
         public NotificationsViewModel()
         {
@@ -62,6 +70,7 @@ namespace CampusGuide.ViewModels
                             {
                                 System.Diagnostics.Debug.WriteLine("NotificationsViewModel: No notifications from Firestore, loading test data...");
                                 LoadTestNotifications();
+                                ApplyFilter();
                                 return;
                             }
 
@@ -76,6 +85,7 @@ namespace CampusGuide.ViewModels
                             }
 
                             HasNotifications = notifications.Count > 0;
+                            ApplyFilter();
 
                             System.Diagnostics.Debug.WriteLine($"NotificationsViewModel: Loaded {notifications.Count} notifications");
 
@@ -108,27 +118,53 @@ namespace CampusGuide.ViewModels
             {
                 new NotificationItem
                 {
-                    Id = "1",
+                    Id = "alert-001",
                     Title = "Library Extended Hours",
-                    Body = "The library will remain open until 10 PM for finals preparation.",
+                    Body = "The library will remain open until 10 PM for finals preparation. Quiet study areas available on 3rd floor.",
                     Type = "Alert",
-                    CreatedAt = DateTime.Now.AddHours(-2)
+                    CreatedAt = DateTime.Now.AddHours(-2),
+                    RelatedLocationId = "lib-001"
                 },
                 new NotificationItem
                 {
-                    Id = "2",
+                    Id = "notif-001",
                     Title = "Campus Tour Available",
-                    Body = "Join our guided campus tour at 2 PM in the main courtyard.",
+                    Body = "Join our guided campus tour at 2 PM in the main courtyard. Learn about our beautiful campus and facilities.",
                     Type = "Notification",
                     CreatedAt = DateTime.Now.AddHours(-4)
                 },
                 new NotificationItem
                 {
-                    Id = "3",
+                    Id = "alert-002",
                     Title = "Cafeteria Closure",
-                    Body = "The main cafeteria will be closed for renovations next week.",
+                    Body = "The main cafeteria will be closed for renovations next week (Monday - Friday). Alternative dining available at Student Center.",
                     Type = "Alert",
-                    CreatedAt = DateTime.Now.AddDays(-1)
+                    CreatedAt = DateTime.Now.AddDays(-1),
+                    RelatedLocationId = "cafeteria-001"
+                },
+                new NotificationItem
+                {
+                    Id = "notif-002",
+                    Title = "Wi-Fi Maintenance Notice",
+                    Body = "Wi-Fi will be down for maintenance tonight from 11 PM to 2 AM. Thank you for your patience.",
+                    Type = "Notification",
+                    CreatedAt = DateTime.Now.AddDays(-2)
+                },
+                new NotificationItem
+                {
+                    Id = "alert-003",
+                    Title = "Parking Lot Full",
+                    Body = "Main parking lot is currently at full capacity. Please use overflow lot B or public transportation.",
+                    Type = "Alert",
+                    CreatedAt = DateTime.Now.AddHours(-3)
+                },
+                new NotificationItem
+                {
+                    Id = "notif-003",
+                    Title = "New Study Group Created",
+                    Body = "A new study group for CS101 has been formed. Interested students can join at the Student Center.",
+                    Type = "Notification",
+                    CreatedAt = DateTime.Now.AddDays(-3)
                 }
             };
 
@@ -151,6 +187,33 @@ namespace CampusGuide.ViewModels
         }
 
         /// <summary>
+        /// Filters notifications by type.
+        /// </summary>
+        public void FilterByType(string? type)
+        {
+            _currentFilter = type;
+            ApplyFilter();
+        }
+
+        private void ApplyFilter()
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                FilteredNotifications.Clear();
+
+                var filtered = string.IsNullOrEmpty(_currentFilter)
+                    ? notifications
+                    : notifications.Where(n => n.Type?.Equals(_currentFilter, StringComparison.OrdinalIgnoreCase) ?? false);
+
+                foreach (var notification in filtered)
+                {
+                    FilteredNotifications.Add(notification);
+                }
+
+                HasFilteredNotifications = FilteredNotifications.Count > 0;
+                System.Diagnostics.Debug.WriteLine($"NotificationsViewModel: Filtered {FilteredNotifications.Count} notifications by type: {_currentFilter ?? "all"}");
+            });
+        }        /// <summary>
         /// Gets notifications filtered by type.
         /// </summary>
         public ObservableCollection<NotificationItem> GetNotificationsByType(string notificationType)

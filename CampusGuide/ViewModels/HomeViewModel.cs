@@ -17,7 +17,7 @@ namespace CampusGuide.ViewModels
         {
             try
             {
-                await Shell.Current.GoToAsync("//search");
+                await Shell.Current.GoToAsync("//favorites");
             }
             catch (Exception ex)
             {
@@ -30,7 +30,7 @@ namespace CampusGuide.ViewModels
         {
             try
             {
-                await Shell.Current.GoToAsync("//search");
+                await Shell.Current.GoToAsync("//events");
             }
             catch (Exception ex)
             {

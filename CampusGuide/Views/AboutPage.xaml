@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CampusGuide.Views.AboutPage"
+             Title="About"
+             BackgroundColor="White">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <VerticalStackLayout Spacing="10" HorizontalOptions="Center" Padding="0,10">
+                <Label Text="CampusGuide" FontSize="32" FontAttributes="Bold" TextColor="#512BD4" HorizontalTextAlignment="Center"/>
+                <Label Text="v1.0.0" FontSize="14" TextColor="Gray" HorizontalTextAlignment="Center"/>
+                <Label Text="Built with .NET 10 MAUI" FontSize="12" TextColor="#666666" HorizontalTextAlignment="Center"/>
+            </VerticalStackLayout>
+
+            <BoxView Color="#E0E0E0" HeightRequest="1"/>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="About This App" FontSize="16" FontAttributes="Bold" TextColor="#333333"/>
+                <Label Text="CampusGuide is a comprehensive mobile application designed to help students, faculty, and visitors navigate the campus efficiently. With interactive maps, location search, QR code scanning, and indoor floor planning, CampusGuide transforms campus exploration into an intuitive, user-friendly experience." FontSize="13" TextColor="#555555" LineBreakMode="WordWrap"/>
+            </VerticalStackLayout>
+
+            <BoxView Color="#E0E0E0" HeightRequest="1"/>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Key Features" FontSize="16" FontAttributes="Bold"/>
+                <Frame Padding="12" CornerRadius="8" BorderColor="#F0F0F0" HasShadow="False">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="• Interactive Campus Map with clustering" FontSize="12"/>
+                        <Label Text="• Location Search with advanced filters" FontSize="12"/>
+                        <Label Text="• Indoor Floor Plans and building navigation" FontSize="12"/>
+                        <Label Text="• QR Code Scanning for quick access" FontSize="12"/>
+                        <Label Text="• Favorites and bookmarks" FontSize="12"/>
+                        <Label Text="• Campus Events calendar" FontSize="12"/>
+                        <Label Text="• Real-time notifications" FontSize="12"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </VerticalStackLayout>
+
+            <BoxView Color="#E0E0E0" HeightRequest="1"/>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Technology Stack" FontSize="16" FontAttributes="Bold"/>
+                <Frame Padding="12" CornerRadius="8" BorderColor="#F0F0F0" HasShadow="False">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Framework: .NET 10 MAUI" FontSize="11"/>
+                        <Label Text="Platform: Android, iOS, Windows" FontSize="11"/>
+                        <Label Text="Database: Firebase Firestore" FontSize="11"/>
+                        <Label Text="Maps: MAUI.Controls.Maps" FontSize="11"/>
+                        <Label Text="QR: ZXing.Net.MAUI + MLKit" FontSize="11"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </VerticalStackLayout>
+
+            <BoxView Color="#E0E0E0" HeightRequest="1"/>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Resources" FontSize="16" FontAttributes="Bold"/>
+                <Button Text="GitHub Repository" BackgroundColor="#333333" TextColor="White" Clicked="OnGitHubClicked" CornerRadius="8"/>
+                <Button Text="Send Feedback" BackgroundColor="#0078D4" TextColor="White" Clicked="OnFeedbackClicked" CornerRadius="8"/>
+                <Button Text="View License" BackgroundColor="#512BD4" TextColor="White" Clicked="OnLicenseClicked" CornerRadius="8"/>
+            </VerticalStackLayout>
+
+            <BoxView Color="#E0E0E0" HeightRequest="1"/>
+
+            <Label Text="© 2026 CampusGuide. All rights reserved. Licensed under MIT License." FontSize="10" TextColor="#888888" HorizontalTextAlignment="Center" LineBreakMode="WordWrap"/>
+            <Label Text="Last Updated: November 2026" FontSize="10" TextColor="#AAAAAA" HorizontalTextAlignment="Center"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

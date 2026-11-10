@@ -14,5 +14,7 @@ namespace CampusGuide.Models
         public List<string> Images { get; set; } = new List<string>();
         public List<string> Tags { get; set; } = new List<string>();
         public string QrCodeId { get; set; } = string.Empty;
+        public bool IsVisible { get; set; } = true;
     }
 }
+

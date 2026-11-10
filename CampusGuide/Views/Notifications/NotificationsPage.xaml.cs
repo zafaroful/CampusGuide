@@ -30,8 +30,12 @@ namespace CampusGuide.Views.Notifications
             {
                 Command = _viewModel?.RefreshNotificationsCommand,
                 HorizontalOptions = LayoutOptions.Fill,
-                VerticalOptions = LayoutOptions.Fill
+                VerticalOptions = LayoutOptions.Fill,
+                RefreshColor = Colors.Blue
             };
+
+            // Bind IsRefreshing to show loading state during refresh
+            refreshView.SetBinding(RefreshView.IsRefreshingProperty, new Binding("IsLoading", source: _viewModel));
 
             // Grid for main content
             var mainGrid = new Grid
@@ -39,6 +43,7 @@ namespace CampusGuide.Views.Notifications
                 RowDefinitions = new RowDefinitionCollection
                 {
                     new RowDefinition(GridLength.Auto),  // Header
+                    new RowDefinition(GridLength.Auto),  // Filter buttons
                     new RowDefinition(GridLength.Star)   // Content
                 },
                 Padding = 0
@@ -54,6 +59,56 @@ namespace CampusGuide.Views.Notifications
             };
             mainGrid.Add(headerLabel, 0, 0);
 
+            // Filter buttons
+            var filterStack = new HorizontalStackLayout
+            {
+                Spacing = 10,
+                Padding = new Thickness(20, 0, 20, 10),
+                HorizontalOptions = LayoutOptions.Start
+            };
+
+            var allButton = new Button
+            {
+                Text = "All",
+                Padding = new Thickness(16, 8),
+                FontSize = 12,
+                CornerRadius = 20,
+                BackgroundColor = Color.FromArgb("#4ECDC4"),
+                TextColor = Colors.White
+            };
+            SemanticProperties.SetDescription(allButton, "Show all notifications");
+            allButton.Clicked += (s, e) => FilterNotifications(null);
+            filterStack.Add(allButton);
+
+            var alertsButton = new Button
+            {
+                Text = "⚠️ Alerts",
+                Padding = new Thickness(16, 8),
+                FontSize = 12,
+                CornerRadius = 20,
+                BackgroundColor = Colors.LightGray,
+                TextColor = Colors.Black
+            };
+            SemanticProperties.SetDescription(alertsButton, "Show alerts only");
+            alertsButton.Clicked += (s, e) => FilterNotifications("Alert");
+            filterStack.Add(alertsButton);
+
+            var notificationsButton = new Button
+            {
+                Text = "ℹ️ Notifications",
+                Padding = new Thickness(16, 8),
+                FontSize = 12,
+                CornerRadius = 20,
+                BackgroundColor = Colors.LightGray,
+                TextColor = Colors.Black
+            };
+            SemanticProperties.SetDescription(notificationsButton, "Show notifications only");
+            notificationsButton.Clicked += (s, e) => FilterNotifications("Notification");
+            filterStack.Add(notificationsButton);
+
+            Grid.SetRow(filterStack, 1);
+            mainGrid.Add(filterStack, 0, 1);
+
             // Content area (Grid for layering)
             var contentGrid = new Grid
             {
@@ -63,8 +118,8 @@ namespace CampusGuide.Views.Notifications
                 },
                 Padding = 0
             };
-            Grid.SetRow(contentGrid, 1);
-            mainGrid.Add(contentGrid, 0, 1);
+            Grid.SetRow(contentGrid, 2);
+            mainGrid.Add(contentGrid, 0, 2);
 
             // Loading indicator
             var loadingStack = new VerticalStackLayout
@@ -99,9 +154,8 @@ namespace CampusGuide.Views.Notifications
                 VerticalOptions = LayoutOptions.Fill,
                 Margin = 0
             };
-            collectionView.SetBinding(ItemsView.ItemsSourceProperty, new Binding("Notifications", source: _viewModel));
+            collectionView.SetBinding(ItemsView.ItemsSourceProperty, new Binding("FilteredNotifications", source: _viewModel));
             collectionView.ItemTemplate = new DataTemplate(CreateNotificationTemplate);
-            collectionView.SelectionChangedCommand = new Command<object>(OnNotificationSelected);
 
             contentGrid.Add(collectionView);
 
@@ -135,7 +189,7 @@ namespace CampusGuide.Views.Notifications
             });
 
             var emptyView = new VerticalStackLayout { emptyStack };
-            emptyView.SetBinding(IsVisibleProperty, new Binding("HasNotifications", source: _viewModel, converter: new InvertedBooleanConverter()));
+            emptyView.SetBinding(IsVisibleProperty, new Binding("HasFilteredNotifications", source: _viewModel, converter: new InvertedBooleanConverter()));
             contentGrid.Add(emptyView);
 
             // Error message
@@ -158,6 +212,7 @@ namespace CampusGuide.Views.Notifications
                 Text = "Dismiss",
                 Margin = new Thickness(0, 5, 0, 0)
             };
+            SemanticProperties.SetDescription(dismissErrorButton, "Dismiss error message");
             dismissErrorButton.Clicked += (s, e) =>
             {
                 if (_viewModel != null)
@@ -173,82 +228,162 @@ namespace CampusGuide.Views.Notifications
             Content = refreshView;
         }
 
+        private void FilterNotifications(string? type)
+        {
+            if (_viewModel != null)
+            {
+                _viewModel.FilterByType(type);
+            }
+        }
+
         private VerticalStackLayout CreateNotificationTemplate()
         {
-            var container = new VerticalStackLayout
+            // Header with type indicator
+            var headerStack = new HorizontalStackLayout
             {
-                Padding = new Thickness(15, 10),
-                Spacing = 5,
-                Margin = new Thickness(10, 5)
+                Spacing = 10,
+                Margin = new Thickness(0, 0, 0, 8),
+                VerticalOptions = LayoutOptions.Start
             };
-
-            container.BackgroundColor = Colors.White;
 
             // Title
             var titleLabel = new Label
             {
                 FontSize = 16,
                 FontAttributes = FontAttributes.Bold,
-                LineBreakMode = LineBreakMode.TailTruncation
+                LineBreakMode = LineBreakMode.WordWrap,
+                VerticalOptions = LayoutOptions.Center,
+                VerticalTextAlignment = TextAlignment.Center,
+                HorizontalOptions = LayoutOptions.FillAndExpand
             };
             titleLabel.SetBinding(Label.TextProperty, "Title");
-            container.Add(titleLabel);
+            headerStack.Add(titleLabel);
 
-            // Body/Content
+            // Type badge with dynamic color
+            var typeBadge = new Label
+            {
+                FontSize = 11,
+                FontAttributes = FontAttributes.Bold,
+                Padding = new Thickness(8, 4),
+                HorizontalTextAlignment = TextAlignment.Center
+            };
+            typeBadge.SetBinding(Label.TextProperty, new Binding("Type", stringFormat: "{0}"));
+            typeBadge.SetBinding(Label.TextColorProperty, new Binding("Type", converter: new NotificationTypeColorConverter()));
+            typeBadge.SetBinding(BackgroundColorProperty, new Binding("Type", converter: new NotificationTypeBgColorConverter()));
+            headerStack.Add(typeBadge);
+
+            // Main content
+            var container = new VerticalStackLayout
+            {
+                Padding = new Thickness(15, 12),
+                Spacing = 8
+            };
+            container.BackgroundColor = Colors.White;
+
+            // Add header
+            container.Add(headerStack);
+
+            // Body/Content with better formatting
             var bodyLabel = new Label
             {
                 FontSize = 14,
-                TextColor = Colors.Gray,
-                LineBreakMode = LineBreakMode.WordWrap
+                TextColor = Colors.DarkGray,
+                LineBreakMode = LineBreakMode.WordWrap,
+                Margin = new Thickness(0, 4, 0, 0)
             };
             bodyLabel.SetBinding(Label.TextProperty, "Body");
             container.Add(bodyLabel);
 
-            // Type badge
-            var typeLabel = new Label
+            // Footer with date and metadata
+            var footerStack = new HorizontalStackLayout
             {
-                FontSize = 12,
-                Margin = new Thickness(0, 5, 0, 0)
+                Spacing = 15,
+                Margin = new Thickness(0, 8, 0, 0),
+                VerticalOptions = LayoutOptions.End
             };
-            typeLabel.SetBinding(Label.TextProperty, "Type");
-            container.Add(typeLabel);
 
-            // Date
+            // Date label
             var dateLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Colors.DarkGray
+                TextColor = Colors.Gray,
+                HorizontalOptions = LayoutOptions.Start
             };
-            dateLabel.SetBinding(Label.TextProperty, new Binding("CreatedAt", stringFormat: "{0:g}"));
-            container.Add(dateLabel);
+            dateLabel.SetBinding(Label.TextProperty, new Binding("CreatedAt", stringFormat: "{0:MMM d, h:mm tt}"));
+            footerStack.Add(dateLabel);
 
-            // Border effect using a modern Border control
+            // Spacer
+            footerStack.Add(new BoxView
+            {
+                Color = Colors.Transparent,
+                HorizontalOptions = LayoutOptions.FillAndExpand
+            });
+
+            // Icon or indicator (optional)
+            var indicatorLabel = new Label
+            {
+                FontSize = 14,
+                HorizontalOptions = LayoutOptions.End
+            };
+            indicatorLabel.SetBinding(Label.TextProperty, new Binding("Type", converter: new NotificationTypeIconConverter()));
+            footerStack.Add(indicatorLabel);
+
+            container.Add(footerStack);
+
+            // Border effect using a modern Border control with drop shadow effect
             var border = new Border
             {
                 Content = container,
-                StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(8) },
+                StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(10) },
                 Stroke = Colors.LightGray,
                 StrokeThickness = 1,
                 Padding = 0,
-                Margin = new Thickness(10, 8)
+                Margin = new Thickness(12, 8),
+                Shadow = new Shadow
+                {
+                    Brush = Colors.Black,
+                    Offset = new Point(0, 2),
+                    Opacity = 0.1f,
+                    Radius = 4
+                }
             };
+
+            var tapGesture = new TapGestureRecognizer();
+            tapGesture.Tapped += OnNotificationCardTapped;
+            border.GestureRecognizers.Add(tapGesture);
 
             return new VerticalStackLayout { border };
         }
 
-        private void OnNotificationSelected(object? obj)
+        private static async void OnNotificationCardTapped(object? sender, TappedEventArgs e)
         {
-            if (obj is NotificationItem notification)
+            if (sender is not BindableObject { BindingContext: NotificationItem notification })
+                return;
+
+            System.Diagnostics.Debug.WriteLine($"NotificationsPage: Notification tapped: {notification.Title} (EventId: {notification.RelatedEventId}, LocationId: {notification.RelatedLocationId})");
+
+            try
             {
-                MainThread.BeginInvokeOnMainThread(async () =>
+                if (!string.IsNullOrEmpty(notification.RelatedEventId))
                 {
-                    // Show detailed view for the notification
-                    await DisplayAlertAsync(
+                    await Shell.Current.GoToAsync($"event-details?id={Uri.EscapeDataString(notification.RelatedEventId)}");
+                }
+                else if (!string.IsNullOrEmpty(notification.RelatedLocationId))
+                {
+                    await Shell.Current.GoToAsync($"location-details?id={Uri.EscapeDataString(notification.RelatedLocationId)}");
+                }
+                else
+                {
+                    await Shell.Current.DisplayAlertAsync(
                         notification.Title ?? "Notification",
                         $"{notification.Body}\n\nType: {notification.Type}\nTime: {notification.CreatedAt:g}",
-                        "OK"
-                    );
-                });
+                        "OK");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"NotificationsPage: Navigation error: {ex.Message}");
+                await Shell.Current.DisplayAlertAsync("Navigation Error", $"Could not open details: {ex.Message}", "OK");
             }
         }
 
@@ -292,6 +427,68 @@ namespace CampusGuide.Views.Notifications
         public object Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
         {
             return !string.IsNullOrEmpty(value?.ToString());
+        }
+
+        public object ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converter to get notification type text color based on type.
+    /// </summary>
+    public class NotificationTypeColorConverter : IValueConverter
+    {
+        public object Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+        {
+            if (value is string typeStr)
+            {
+                return typeStr.Equals("Alert", StringComparison.OrdinalIgnoreCase) ? Colors.White : Colors.Blue;
+            }
+            return Colors.Black;
+        }
+
+        public object ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converter to get notification type background color based on type.
+    /// </summary>
+    public class NotificationTypeBgColorConverter : IValueConverter
+    {
+        public object Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+        {
+            if (value is string typeStr)
+            {
+                return typeStr.Equals("Alert", StringComparison.OrdinalIgnoreCase) 
+                    ? Color.FromArgb("#FF6B6B")  // Red for alerts
+                    : Color.FromArgb("#4ECDC4"); // Teal for notifications
+            }
+            return Colors.LightGray;
+        }
+
+        public object ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converter to get notification type icon emoji.
+    /// </summary>
+    public class NotificationTypeIconConverter : IValueConverter
+    {
+        public object Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+        {
+            if (value is string typeStr)
+            {
+                return typeStr.Equals("Alert", StringComparison.OrdinalIgnoreCase) ? "⚠️" : "ℹ️";
+            }
+            return "📌";
         }
 
         public object ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
