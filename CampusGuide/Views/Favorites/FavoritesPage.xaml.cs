@@ -253,10 +253,28 @@ namespace CampusGuide.Views.Favorites
 
             container.Add(topRow);
 
-            // Location ID (for reference)
-            var idLabel = new Label
+            var descriptionLabel = new Label
+            {
+                FontSize = 14,
+                LineBreakMode = LineBreakMode.WordWrap,
+                TextColor = Themed("#555555", "#D0D0D0")
+            };
+            descriptionLabel.SetBinding(Label.TextProperty, new Binding("Description"));
+            descriptionLabel.SetBinding(IsVisibleProperty, new Binding("Description", converter: new IsNotNullOrEmptyConverter()));
+            container.Add(descriptionLabel);
+
+            var metaLabel = new Label
             {
                 FontSize = 13,
+                TextColor = Themed("#6B6B6B", "#B0B3B8")
+            };
+            metaLabel.SetBinding(Label.TextProperty, new Binding("MetaText"));
+            metaLabel.SetBinding(IsVisibleProperty, new Binding("MetaText", converter: new IsNotNullOrEmptyConverter()));
+            container.Add(metaLabel);
+
+            var idLabel = new Label
+            {
+                FontSize = 12,
                 TextColor = Themed("#6B6B6B", "#B0B3B8")
             };
             idLabel.SetBinding(Label.TextProperty, new Binding("LocationId", stringFormat: "ID: {0}"));

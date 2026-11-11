@@ -143,7 +143,11 @@ namespace CampusGuide.ViewModels
                 {
                     Id = location.Id,
                     LocationId = location.Id,
-                    Name = location.Name
+                    Name = location.Name,
+                    Description = location.Description,
+                    Type = location.Type,
+                    Building = location.Building,
+                    Floor = location.Floor
                 };
 
                 System.Diagnostics.Debug.WriteLine($"FavoritesViewModel: Adding favorite {location.Name}");
