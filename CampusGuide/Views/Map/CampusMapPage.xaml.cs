@@ -67,8 +67,8 @@ namespace CampusGuide.Views.Map
 
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            // When MapPins changes, refresh the map display
-            if (e.PropertyName == nameof(CampusMapViewModel.MapPins))
+            // When MapPins or ClusterPins changes, refresh the map display
+            if (e.PropertyName == nameof(CampusMapViewModel.MapPins) || e.PropertyName == nameof(CampusMapViewModel.ClusterPins))
             {
                 Debug.WriteLine($"*** VIEWMODEL MAPPINS CHANGED *** Refreshing map pins");
                 MainThread.BeginInvokeOnMainThread(() => RefreshMapPins());
@@ -301,6 +301,7 @@ namespace CampusGuide.Views.Map
             Debug.WriteLine("Map initialized - pins will load when data is available");
 
             mainLayout.Add(_map, 0, 1);
+            RefreshMapPins();
 
             // Map controls toolbar
             var controlsLayout = new HorizontalStackLayout
@@ -918,6 +919,7 @@ namespace CampusGuide.Views.Map
                 // Load locations from ViewModel (async operation)
                 // The LoadLocationsCommand will populate MapPins, which triggers PropertyChanged -> RefreshMapPins
                 await _viewModel.LoadLocationsCommand.ExecuteAsync(null);
+                RefreshMapPins();
                 FocusOnPendingLocation();
             }
         }

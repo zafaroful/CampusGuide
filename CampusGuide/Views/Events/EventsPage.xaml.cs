@@ -5,6 +5,7 @@ using Microsoft.Maui.Layouts;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Controls.Shapes;
 using CampusGuide.Services;
+using CampusGuide.Views.Controls;
 
 namespace CampusGuide.Views.Events
 {
@@ -29,7 +30,7 @@ namespace CampusGuide.Views.Events
                 Command = _viewModel?.RefreshEventsCommand,
                 HorizontalOptions = LayoutOptions.Fill,
                 VerticalOptions = LayoutOptions.Fill,
-                RefreshColor = Colors.Blue
+                RefreshColor = ThemeHelper.Accent
             };
 
             // Bind IsRefreshing to show loading state during refresh
@@ -68,28 +69,7 @@ namespace CampusGuide.Views.Events
             Grid.SetRow(contentGrid, 1);
             mainGrid.Add(contentGrid, 0, 1);
 
-            // Loading indicator
-            var loadingStack = new VerticalStackLayout
-            {
-                Spacing = 10,
-                Padding = 20,
-                HorizontalOptions = LayoutOptions.Center,
-                VerticalOptions = LayoutOptions.Center
-            };
-            loadingStack.Add(new ActivityIndicator
-            {
-                IsRunning = true,
-                IsVisible = true,
-                Color = Colors.Blue,
-                Scale = 1.5
-            });
-            loadingStack.Add(new Label
-            {
-                Text = "Loading events...",
-                HorizontalTextAlignment = TextAlignment.Center
-            });
-
-            var loadingView = new VerticalStackLayout { loadingStack };
+            var loadingView = new StateView(new ActivityIndicator { IsRunning = true, Color = ThemeHelper.Accent, WidthRequest = 36, HeightRequest = 36 }, "Loading events...");
             loadingView.SetBinding(IsVisibleProperty, new Binding("IsLoading", source: _viewModel));
             contentGrid.Add(loadingView);
 
@@ -107,68 +87,23 @@ namespace CampusGuide.Views.Events
 
             contentGrid.Add(collectionView);
 
-            // Empty state
-            var emptyStack = new VerticalStackLayout
-            {
-                Spacing = 15,
-                Padding = 40,
-                HorizontalOptions = LayoutOptions.Center,
-                VerticalOptions = LayoutOptions.Center
-            };
-            emptyStack.Add(new Label
-            {
-                Text = "📅",
-                FontSize = 48,
-                HorizontalOptions = LayoutOptions.Center
-            });
-            emptyStack.Add(new Label
-            {
-                Text = "No Events Scheduled",
-                FontSize = 20,
-                FontAttributes = FontAttributes.Bold,
-                HorizontalTextAlignment = TextAlignment.Center
-            });
-            emptyStack.Add(new Label
-            {
-                Text = "Check back later for upcoming campus events.",
-                FontSize = 14,
-                TextColor = Colors.Gray,
-                HorizontalTextAlignment = TextAlignment.Center
-            });
-
-            var emptyView = new VerticalStackLayout { emptyStack };
+            var emptyView = new StateView(
+                IconFactory.Calendar(ThemeHelper.MutedText, 48),
+                "No upcoming events",
+                "Check back later for upcoming campus events.",
+                "Browse Map",
+                async () => await Shell.Current.GoToAsync("//map"));
             emptyView.SetBinding(IsVisibleProperty, new Binding("IsEmpty", source: _viewModel));
             contentGrid.Add(emptyView);
 
-            // Error message
-            var errorStack = new VerticalStackLayout
-            {
-                Padding = 20,
-                Spacing = 10
-            };
-            var errorLabel = new Label
-            {
-                TextColor = Colors.Red,
-                FontAttributes = FontAttributes.Bold,
-                LineBreakMode = LineBreakMode.WordWrap
-            };
-            errorLabel.SetBinding(Label.TextProperty, new Binding("ErrorMessage", source: _viewModel));
-            errorStack.Add(errorLabel);
-
-            var dismissErrorButton = new Button
-            {
-                Text = "Dismiss",
-                Margin = new Thickness(0, 5, 0, 0)
-            };
-            SemanticProperties.SetDescription(dismissErrorButton, "Dismiss error message");
-            dismissErrorButton.Clicked += (s, e) =>
+            var errorView = new StateView(IconFactory.Alert(ThemeHelper.Danger, 48), "Something went wrong", null, "Dismiss", () =>
             {
                 if (_viewModel != null)
                     _viewModel.ErrorMessage = string.Empty;
-            };
-            errorStack.Add(dismissErrorButton);
-
-            var errorView = new VerticalStackLayout { errorStack };
+            });
+            errorView.MessageLabel.SetBinding(Label.TextProperty, new Binding("ErrorMessage", source: _viewModel));
+            errorView.MessageLabel.TextColor = ThemeHelper.Danger;
+            errorView.MessageLabel.FontAttributes = FontAttributes.Bold;
             errorView.SetBinding(IsVisibleProperty, new Binding("ErrorMessage", source: _viewModel, converter: new IsNotNullOrEmptyConverter()));
             contentGrid.Add(errorView);
 
@@ -183,7 +118,7 @@ namespace CampusGuide.Views.Events
                 Padding = new Thickness(15, 12),
                 Spacing = 8
             };
-            container.BackgroundColor = Colors.White;
+            container.BackgroundColor = ThemeHelper.CardBackground;
 
             // Date badge
             var dateStack = new HorizontalStackLayout
@@ -206,7 +141,7 @@ namespace CampusGuide.Views.Events
             {
                 Content = monthLabel,
                 StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(4) },
-                BackgroundColor = Color.FromArgb("#4ECDC4"),
+                BackgroundColor = ThemeHelper.Accent,
                 Padding = 0,
                 StrokeThickness = 0
             };
@@ -216,7 +151,7 @@ namespace CampusGuide.Views.Events
             {
                 FontSize = 14,
                 FontAttributes = FontAttributes.Bold,
-                TextColor = Colors.Black,
+                TextColor = ThemeHelper.BodyText,
                 VerticalOptions = LayoutOptions.Center
             };
             dayLabel.SetBinding(Label.TextProperty, new Binding("StartTime", stringFormat: "{0:dd}"));
@@ -225,7 +160,7 @@ namespace CampusGuide.Views.Events
             var dayOfWeekLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Colors.Gray,
+                TextColor = ThemeHelper.MutedText,
                 VerticalOptions = LayoutOptions.Center
             };
             dayOfWeekLabel.SetBinding(Label.TextProperty, new Binding("StartTime", stringFormat: "{0:ddd}"));
@@ -247,16 +182,15 @@ namespace CampusGuide.Views.Events
             var timeLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Colors.Gray
+                TextColor = ThemeHelper.MutedText
             };
-            timeLabel.SetBinding(Label.TextProperty, new Binding("StartTime", stringFormat: "{0:h:mm tt}"));
-            container.Add(timeLabel);
+            timeLabel.SetBinding(Label.TextProperty, new Binding("StartTime", stringFormat: "{0:h:mm tt}"));            container.Add(timeLabel);
 
             // Description (limited to 2 lines)
             var descriptionLabel = new Label
             {
                 FontSize = 13,
-                TextColor = Colors.DarkGray,
+                TextColor = ThemeHelper.BodyText,
                 LineBreakMode = LineBreakMode.TailTruncation,
                 MaxLines = 2
             };
@@ -270,19 +204,14 @@ namespace CampusGuide.Views.Events
                 Margin = new Thickness(0, 8, 0, 0)
             };
 
-            locationStack.Add(new Label
-            {
-                Text = "📍",
-                FontSize = 12
-            });
+            locationStack.Add(IconFactory.Pin(ThemeHelper.Accent, 12));
 
             var locationLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Colors.Blue
+                TextColor = ThemeHelper.Accent
             };
-            locationLabel.SetBinding(Label.TextProperty, new Binding("LocationId", stringFormat: "{0}"));
-            locationStack.Add(locationLabel);
+            locationLabel.SetBinding(Label.TextProperty, new Binding("LocationId", stringFormat: "{0}"));            locationStack.Add(locationLabel);
 
             container.Add(locationStack);
 
@@ -290,11 +219,11 @@ namespace CampusGuide.Views.Events
             var border = new Border
             {
                 Content = container,
-                StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(10) },
-                Stroke = Colors.LightGray,
+                StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(16) },
+                Stroke = ThemeHelper.CardBorder,
                 StrokeThickness = 1,
                 Padding = 0,
-                Margin = new Thickness(12, 8),
+                Margin = new Thickness(16, 8),
                 Shadow = new Shadow
                 {
                     Brush = Colors.Black,

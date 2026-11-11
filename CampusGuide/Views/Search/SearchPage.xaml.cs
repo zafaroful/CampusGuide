@@ -4,8 +4,10 @@ using CampusGuide.ViewModels.Search;
 using CampusGuide.Models;
 using CampusGuide.Services;
 using CampusGuide.Converters;
+using CampusGuide.Views.Controls;
 using LocationModel = CampusGuide.Models.Location;
 using System.Diagnostics;
+using static CampusGuide.Views.Controls.ThemeHelper;
 
 namespace CampusGuide.Views.Search
 {
@@ -112,14 +114,10 @@ namespace CampusGuide.Views.Search
             layout.Add(errorLabel);
 
             // Empty state message
-            var emptyLabel = new Label
-            {
-                Text = "No results found. Try a different search.",
-                FontSize = 14,
-                Opacity = 0.6,
-                HorizontalOptions = LayoutOptions.Center,
-                Margin = new Thickness(0, 20, 0, 0)
-            };
+            var emptyLabel = new StateView(
+                IconFactory.Search(ThemeHelper.MutedText, 48),
+                "No results found",
+                "Try a different search.");
             emptyLabel.SetBinding(IsVisibleProperty, "ShowEmptyState");
             layout.Add(emptyLabel);
 
@@ -145,10 +143,6 @@ namespace CampusGuide.Views.Search
             // Add handler to load data when page appears (won't block UI anymore)
             Appearing += OnPageAppearing;
         }
-
-        private static bool IsDark => Application.Current?.RequestedTheme == AppTheme.Dark;
-
-        private static Color Themed(string light, string dark) => Color.Parse(IsDark ? dark : light);
 
         private void OnPageAppearing(object? sender, EventArgs e)
         {

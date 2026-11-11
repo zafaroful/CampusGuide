@@ -5,6 +5,8 @@ using Microsoft.Maui.Layouts;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Controls.Shapes;
 using CampusGuide.Services;
+using CampusGuide.Views.Controls;
+using static CampusGuide.Views.Controls.ThemeHelper;
 
 namespace CampusGuide.Views.Favorites
 {
@@ -108,71 +110,34 @@ namespace CampusGuide.Views.Favorites
             contentGrid.Add(collectionView);
 
             // Empty state
-            var emptyStack = new VerticalStackLayout
-            {
-                Spacing = 12,
-                Padding = new Thickness(16, 40),
-                HorizontalOptions = LayoutOptions.Center,
-                VerticalOptions = LayoutOptions.Center
-            };
-
-            var emptyIconCircle = new Border
-            {
-                StrokeShape = new RoundRectangle { CornerRadius = 40 },
-                Stroke = Colors.Transparent,
-                BackgroundColor = Themed("#FFEBEE", "#4A2A2A"),
-                WidthRequest = 80,
-                HeightRequest = 80,
-                HorizontalOptions = LayoutOptions.Center,
-                Content = new Microsoft.Maui.Controls.Shapes.Path
+            var emptyStack = new StateView(
+                new Border
                 {
-                    Data = new PathGeometryConverter().ConvertFromInvariantString("M 12,21 C 12,21 3,14.5 3,8.5 C 3,5.4 5.4,3 8.5,3 C 10.2,3 11.5,3.9 12,5 C 12.5,3.9 13.8,3 15.5,3 C 18.6,3 21,5.4 21,8.5 C 21,14.5 12,21 12,21 Z") as Geometry,
-                    Stroke = new SolidColorBrush(Themed("#00695C", "#4DB6AC")),
-                    StrokeThickness = 2.5,
-                    StrokeLineJoin = PenLineJoin.Round,
-                    Fill = Colors.Transparent,
-                    Aspect = Stretch.Uniform,
-                    WidthRequest = 36,
-                    HeightRequest = 36,
+                    StrokeShape = new RoundRectangle { CornerRadius = 40 },
+                    Stroke = Colors.Transparent,
+                    BackgroundColor = Themed("#FFEBEE", "#4A2A2A"),
+                    WidthRequest = 80,
+                    HeightRequest = 80,
                     HorizontalOptions = LayoutOptions.Center,
-                    VerticalOptions = LayoutOptions.Center
-                }
-            };
-            emptyStack.Add(emptyIconCircle);
-
-            emptyStack.Add(new Label
-            {
-                Text = "No Favorites Yet",
-                FontSize = 20,
-                FontAttributes = FontAttributes.Bold,
-                HorizontalTextAlignment = TextAlignment.Center,
-                TextColor = Themed("#333333", "#F1F1F1"),
-                Margin = new Thickness(0, 8, 0, 0)
-            });
-            emptyStack.Add(new Label
-            {
-                Text = "Save your favorite locations from the map or search to see them here.",
-                FontSize = 14,
-                TextColor = Themed("#6B6B6B", "#B0B3B8"),
-                HorizontalTextAlignment = TextAlignment.Center,
-                LineBreakMode = LineBreakMode.WordWrap,
-                MaximumWidthRequest = 300
-            });
-
-            var browseButton = new Button
-            {
-                Text = "Browse locations",
-                BackgroundColor = Themed("#00695C", "#4DB6AC"),
-                TextColor = Themed("#FFFFFF", "#121212"),
-                CornerRadius = 12,
-                Padding = new Thickness(24, 10),
-                Margin = new Thickness(0, 16, 0, 0),
-                HorizontalOptions = LayoutOptions.Center
-            };
-            SemanticProperties.SetDescription(browseButton, "Browse campus locations");
-            browseButton.Clicked += async (s, e) => await Shell.Current.GoToAsync("//search");
-            emptyStack.Add(browseButton);
-
+                    Content = new Microsoft.Maui.Controls.Shapes.Path
+                    {
+                        Data = new PathGeometryConverter().ConvertFromInvariantString("M 12,21 C 12,21 3,14.5 3,8.5 C 3,5.4 5.4,3 8.5,3 C 10.2,3 11.5,3.9 12,5 C 12.5,3.9 13.8,3 15.5,3 C 18.6,3 21,5.4 21,8.5 C 21,14.5 12,21 12,21 Z") as Geometry,
+                        Stroke = new SolidColorBrush(Themed("#00695C", "#4DB6AC")),
+                        StrokeThickness = 2.5,
+                        StrokeLineJoin = PenLineJoin.Round,
+                        Fill = Colors.Transparent,
+                        Aspect = Stretch.Uniform,
+                        WidthRequest = 36,
+                        HeightRequest = 36,
+                        HorizontalOptions = LayoutOptions.Center,
+                        VerticalOptions = LayoutOptions.Center
+                    }
+                },
+                "No favorites yet",
+                "Save your favorite locations from the map or search to see them here.",
+                "Browse locations",
+                async () => await Shell.Current.GoToAsync("//search"));
+            SemanticProperties.SetDescription(emptyStack, "No favorites yet. Browse campus locations");
             emptyStack.SetBinding(IsVisibleProperty, new Binding("IsEmpty", source: _viewModel));
             contentGrid.Add(emptyStack);
 
@@ -213,10 +178,6 @@ namespace CampusGuide.Views.Favorites
             Content = refreshView;
         }
 
-        private static bool IsDark => Application.Current?.RequestedTheme == AppTheme.Dark;
-
-        private static Color Themed(string light, string dark) => Color.Parse(IsDark ? dark : light);
-
         private View CreateFavoriteTemplate()
         {
             var container = new VerticalStackLayout
@@ -248,7 +209,7 @@ namespace CampusGuide.Views.Favorites
             // Remove button
             var removeButton = new Button
             {
-                Text = "✕ Remove",
+                Text = "Remove",
                 Padding = new Thickness(12, 6),
                 FontSize = 12,
                 BackgroundColor = Themed("#FFEBEE", "#4A2A2A"),

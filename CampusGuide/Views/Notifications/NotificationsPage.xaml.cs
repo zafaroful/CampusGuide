@@ -3,12 +3,15 @@ using Microsoft.Maui.Controls.Shapes;
 using CampusGuide.ViewModels;
 using CampusGuide.Models;
 using CampusGuide.Services;
+using CampusGuide.Views.Controls;
 
 namespace CampusGuide.Views.Notifications
 {
     public partial class NotificationsPage : ContentPage
     {
         private NotificationsViewModel? _viewModel;
+        private readonly List<(Button Button, string? Type)> _filterChips = new();
+        private string? _selectedFilter;
 
         public NotificationsPage()
         {
@@ -31,7 +34,7 @@ namespace CampusGuide.Views.Notifications
                 Command = _viewModel?.RefreshNotificationsCommand,
                 HorizontalOptions = LayoutOptions.Fill,
                 VerticalOptions = LayoutOptions.Fill,
-                RefreshColor = Colors.Blue
+                RefreshColor = ThemeHelper.Accent
             };
 
             // Bind IsRefreshing to show loading state during refresh
@@ -50,14 +53,24 @@ namespace CampusGuide.Views.Notifications
             };
 
             // Header
-            var headerLabel = new Label
+            var headerStack = new VerticalStackLayout
+            {
+                Spacing = 2,
+                Margin = new Thickness(20, 15, 20, 10)
+            };
+            headerStack.Add(new Label
             {
                 Text = "Notifications & Alerts",
                 FontSize = 24,
-                FontAttributes = FontAttributes.Bold,
-                Margin = new Thickness(20, 15, 20, 10)
-            };
-            mainGrid.Add(headerLabel, 0, 0);
+                FontAttributes = FontAttributes.Bold
+            });
+            headerStack.Add(new Label
+            {
+                Text = "Stay updated with campus alerts and reminders",
+                FontSize = 14,
+                TextColor = ThemeHelper.MutedText
+            });
+            mainGrid.Add(headerStack, 0, 0);
 
             // Filter buttons
             var filterStack = new HorizontalStackLayout
@@ -67,47 +80,21 @@ namespace CampusGuide.Views.Notifications
                 HorizontalOptions = LayoutOptions.Start
             };
 
-            var allButton = new Button
-            {
-                Text = "All",
-                Padding = new Thickness(16, 8),
-                FontSize = 12,
-                CornerRadius = 20,
-                BackgroundColor = Color.FromArgb("#4ECDC4"),
-                TextColor = Colors.White
-            };
-            SemanticProperties.SetDescription(allButton, "Show all notifications");
+            var allButton = CreateFilterChip("All", null, "Show all notifications");
             allButton.Clicked += (s, e) => FilterNotifications(null);
             filterStack.Add(allButton);
 
-            var alertsButton = new Button
-            {
-                Text = "⚠️ Alerts",
-                Padding = new Thickness(16, 8),
-                FontSize = 12,
-                CornerRadius = 20,
-                BackgroundColor = Colors.LightGray,
-                TextColor = Colors.Black
-            };
-            SemanticProperties.SetDescription(alertsButton, "Show alerts only");
+            var alertsButton = CreateFilterChip("Alerts", "Alert", "Show alerts only");
             alertsButton.Clicked += (s, e) => FilterNotifications("Alert");
             filterStack.Add(alertsButton);
 
-            var notificationsButton = new Button
-            {
-                Text = "ℹ️ Notifications",
-                Padding = new Thickness(16, 8),
-                FontSize = 12,
-                CornerRadius = 20,
-                BackgroundColor = Colors.LightGray,
-                TextColor = Colors.Black
-            };
-            SemanticProperties.SetDescription(notificationsButton, "Show notifications only");
+            var notificationsButton = CreateFilterChip("Notifications", "Notification", "Show notifications only");
             notificationsButton.Clicked += (s, e) => FilterNotifications("Notification");
             filterStack.Add(notificationsButton);
 
             Grid.SetRow(filterStack, 1);
             mainGrid.Add(filterStack, 0, 1);
+            UpdateFilterChips();
 
             // Content area (Grid for layering)
             var contentGrid = new Grid
@@ -121,28 +108,7 @@ namespace CampusGuide.Views.Notifications
             Grid.SetRow(contentGrid, 2);
             mainGrid.Add(contentGrid, 0, 2);
 
-            // Loading indicator
-            var loadingStack = new VerticalStackLayout
-            {
-                Spacing = 10,
-                Padding = 20,
-                HorizontalOptions = LayoutOptions.Center,
-                VerticalOptions = LayoutOptions.Center
-            };
-            loadingStack.Add(new ActivityIndicator
-            {
-                IsRunning = true,
-                IsVisible = true,
-                Color = Colors.Blue,
-                Scale = 1.5
-            });
-            loadingStack.Add(new Label
-            {
-                Text = "Loading notifications...",
-                HorizontalTextAlignment = TextAlignment.Center
-            });
-
-            var loadingView = new VerticalStackLayout { loadingStack };
+            var loadingView = new StateView(new ActivityIndicator { IsRunning = true, Color = ThemeHelper.Accent, WidthRequest = 36, HeightRequest = 36 }, "Loading notifications...");
             loadingView.SetBinding(IsVisibleProperty, new Binding("IsLoading", source: _viewModel));
             contentGrid.Add(loadingView);
 
@@ -159,68 +125,18 @@ namespace CampusGuide.Views.Notifications
 
             contentGrid.Add(collectionView);
 
-            // Empty state
-            var emptyStack = new VerticalStackLayout
-            {
-                Spacing = 15,
-                Padding = 40,
-                HorizontalOptions = LayoutOptions.Center,
-                VerticalOptions = LayoutOptions.Center
-            };
-            emptyStack.Add(new Label
-            {
-                Text = "📭",
-                FontSize = 48,
-                HorizontalOptions = LayoutOptions.Center
-            });
-            emptyStack.Add(new Label
-            {
-                Text = "No Notifications",
-                FontSize = 20,
-                FontAttributes = FontAttributes.Bold,
-                HorizontalTextAlignment = TextAlignment.Center
-            });
-            emptyStack.Add(new Label
-            {
-                Text = "You're all caught up! Check back later for new alerts and reminders.",
-                FontSize = 14,
-                TextColor = Colors.Gray,
-                HorizontalTextAlignment = TextAlignment.Center
-            });
-
-            var emptyView = new VerticalStackLayout { emptyStack };
+            var emptyView = new StateView(IconFactory.Inbox(ThemeHelper.MutedText, 48), "You're all caught up", "No new alerts or reminders right now.");
             emptyView.SetBinding(IsVisibleProperty, new Binding("HasFilteredNotifications", source: _viewModel, converter: new InvertedBooleanConverter()));
             contentGrid.Add(emptyView);
 
-            // Error message
-            var errorStack = new VerticalStackLayout
-            {
-                Padding = 20,
-                Spacing = 10
-            };
-            var errorLabel = new Label
-            {
-                TextColor = Colors.Red,
-                FontAttributes = FontAttributes.Bold,
-                LineBreakMode = LineBreakMode.WordWrap
-            };
-            errorLabel.SetBinding(Label.TextProperty, new Binding("ErrorMessage", source: _viewModel));
-            errorStack.Add(errorLabel);
-
-            var dismissErrorButton = new Button
-            {
-                Text = "Dismiss",
-                Margin = new Thickness(0, 5, 0, 0)
-            };
-            SemanticProperties.SetDescription(dismissErrorButton, "Dismiss error message");
-            dismissErrorButton.Clicked += (s, e) =>
+            var errorView = new StateView(IconFactory.Alert(ThemeHelper.Danger, 48), "Something went wrong", null, "Dismiss", () =>
             {
                 if (_viewModel != null)
                     _viewModel.ErrorMessage = string.Empty;
-            };
-            errorStack.Add(dismissErrorButton);
-
-            var errorView = new VerticalStackLayout { errorStack };
+            });
+            errorView.MessageLabel.SetBinding(Label.TextProperty, new Binding("ErrorMessage", source: _viewModel));
+            errorView.MessageLabel.TextColor = ThemeHelper.Danger;
+            errorView.MessageLabel.FontAttributes = FontAttributes.Bold;
             errorView.SetBinding(IsVisibleProperty, new Binding("ErrorMessage", source: _viewModel, converter: new IsNotNullOrEmptyConverter()));
             contentGrid.Add(errorView);
 
@@ -233,6 +149,34 @@ namespace CampusGuide.Views.Notifications
             if (_viewModel != null)
             {
                 _viewModel.FilterByType(type);
+            }
+            _selectedFilter = type;
+            UpdateFilterChips();
+        }
+
+        private Button CreateFilterChip(string text, string? type, string description)
+        {
+            var chip = new Button
+            {
+                Text = text,
+                Padding = new Thickness(16, 8),
+                FontSize = 12,
+                CornerRadius = 20,
+                BorderWidth = 1
+            };
+            SemanticProperties.SetDescription(chip, description);
+            _filterChips.Add((chip, type));
+            return chip;
+        }
+
+        private void UpdateFilterChips()
+        {
+            foreach (var (chip, type) in _filterChips)
+            {
+                var selected = type == _selectedFilter;
+                chip.BackgroundColor = selected ? ThemeHelper.Accent : Colors.Transparent;
+                chip.BorderColor = ThemeHelper.Accent;
+                chip.TextColor = selected ? Colors.White : ThemeHelper.Accent;
             }
         }
 
@@ -278,7 +222,7 @@ namespace CampusGuide.Views.Notifications
                 Padding = new Thickness(15, 12),
                 Spacing = 8
             };
-            container.BackgroundColor = Colors.White;
+            container.BackgroundColor = ThemeHelper.CardBackground;
 
             // Add header
             container.Add(headerStack);
@@ -287,7 +231,7 @@ namespace CampusGuide.Views.Notifications
             var bodyLabel = new Label
             {
                 FontSize = 14,
-                TextColor = Colors.DarkGray,
+                TextColor = ThemeHelper.BodyText,
                 LineBreakMode = LineBreakMode.WordWrap,
                 Margin = new Thickness(0, 4, 0, 0)
             };
@@ -306,7 +250,7 @@ namespace CampusGuide.Views.Notifications
             var dateLabel = new Label
             {
                 FontSize = 12,
-                TextColor = Colors.Gray,
+                TextColor = ThemeHelper.MutedText,
                 HorizontalOptions = LayoutOptions.Start
             };
             dateLabel.SetBinding(Label.TextProperty, new Binding("CreatedAt", stringFormat: "{0:MMM d, h:mm tt}"));
@@ -320,13 +264,17 @@ namespace CampusGuide.Views.Notifications
             });
 
             // Icon or indicator (optional)
-            var indicatorLabel = new Label
+            var indicatorIcon = new Microsoft.Maui.Controls.Shapes.Path
             {
-                FontSize = 14,
-                HorizontalOptions = LayoutOptions.End
+                Aspect = Stretch.Uniform,
+                WidthRequest = 14,
+                HeightRequest = 14,
+                HorizontalOptions = LayoutOptions.End,
+                VerticalOptions = LayoutOptions.Center,
+                Fill = ThemeHelper.Accent
             };
-            indicatorLabel.SetBinding(Label.TextProperty, new Binding("Type", converter: new NotificationTypeIconConverter()));
-            footerStack.Add(indicatorLabel);
+            indicatorIcon.SetBinding(Microsoft.Maui.Controls.Shapes.Path.DataProperty, new Binding("Type", converter: new NotificationTypeIconConverter()));
+            footerStack.Add(indicatorIcon);
 
             container.Add(footerStack);
 
@@ -334,11 +282,11 @@ namespace CampusGuide.Views.Notifications
             var border = new Border
             {
                 Content = container,
-                StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(10) },
-                Stroke = Colors.LightGray,
+                StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(16) },
+                Stroke = ThemeHelper.CardBorder,
                 StrokeThickness = 1,
                 Padding = 0,
-                Margin = new Thickness(12, 8),
+                Margin = new Thickness(16, 8),
                 Shadow = new Shadow
                 {
                     Brush = Colors.Black,
@@ -478,17 +426,17 @@ namespace CampusGuide.Views.Notifications
     }
 
     /// <summary>
-    /// Converter to get notification type icon emoji.
+    /// Converter to get notification type icon geometry.
     /// </summary>
     public class NotificationTypeIconConverter : IValueConverter
     {
         public object Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
         {
-            if (value is string typeStr)
+            if (value is string typeStr && typeStr.Equals("Alert", StringComparison.OrdinalIgnoreCase))
             {
-                return typeStr.Equals("Alert", StringComparison.OrdinalIgnoreCase) ? "⚠️" : "ℹ️";
+                return IconFactory.ToGeometry(IconFactory.AlertData);
             }
-            return "📌";
+            return IconFactory.ToGeometry(IconFactory.InfoData);
         }
 
         public object ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
