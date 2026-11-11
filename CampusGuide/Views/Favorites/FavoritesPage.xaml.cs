@@ -51,7 +51,7 @@ namespace CampusGuide.Views.Favorites
             {
                 FontSize = 14,
                 TextColor = Colors.Gray,
-                Margin = new Thickness(20, 12, 20, 8)
+                Margin = new Thickness(16, 12, 16, 8)
             };
             headerLabel.SetBinding(Label.TextProperty, new Binding(nameof(FavoritesViewModel.CountText), source: _viewModel));
             headerLabel.SetBinding(IsVisibleProperty, new Binding(nameof(FavoritesViewModel.HasFavorites), source: _viewModel));
@@ -73,7 +73,7 @@ namespace CampusGuide.Views.Favorites
             var loadingStack = new VerticalStackLayout
             {
                 Spacing = 10,
-                Padding = 20,
+                Padding = 16,
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center
             };
@@ -90,9 +90,8 @@ namespace CampusGuide.Views.Favorites
                 HorizontalTextAlignment = TextAlignment.Center
             });
 
-            var loadingView = new VerticalStackLayout { loadingStack };
-            loadingView.SetBinding(IsVisibleProperty, new Binding("IsLoading", source: _viewModel));
-            contentGrid.Add(loadingView);
+            loadingStack.SetBinding(IsVisibleProperty, new Binding("IsLoading", source: _viewModel));
+            contentGrid.Add(loadingStack);
 
             // CollectionView for favorites
             var collectionView = new CollectionView
@@ -111,7 +110,7 @@ namespace CampusGuide.Views.Favorites
             var emptyStack = new VerticalStackLayout
             {
                 Spacing = 12,
-                Padding = new Thickness(32, 40),
+                Padding = new Thickness(16, 40),
                 HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center
             };
@@ -167,14 +166,13 @@ namespace CampusGuide.Views.Favorites
             browseButton.Clicked += async (s, e) => await Shell.Current.GoToAsync("//search");
             emptyStack.Add(browseButton);
 
-            var emptyView = new VerticalStackLayout { emptyStack };
-            emptyView.SetBinding(IsVisibleProperty, new Binding("IsEmpty", source: _viewModel));
-            contentGrid.Add(emptyView);
+            emptyStack.SetBinding(IsVisibleProperty, new Binding("IsEmpty", source: _viewModel));
+            contentGrid.Add(emptyStack);
 
             // Error message
             var errorStack = new VerticalStackLayout
             {
-                Padding = 20,
+                Padding = 16,
                 Spacing = 10
             };
             var errorLabel = new Label
@@ -199,9 +197,8 @@ namespace CampusGuide.Views.Favorites
             };
             errorStack.Add(dismissErrorButton);
 
-            var errorView = new VerticalStackLayout { errorStack };
-            errorView.SetBinding(IsVisibleProperty, new Binding("ErrorMessage", source: _viewModel, converter: new IsNotNullOrEmptyConverter()));
-            contentGrid.Add(errorView);
+            errorStack.SetBinding(IsVisibleProperty, new Binding("ErrorMessage", source: _viewModel, converter: new IsNotNullOrEmptyConverter()));
+            contentGrid.Add(errorStack);
 
             refreshView.Content = mainGrid;
             Content = refreshView;
@@ -211,7 +208,7 @@ namespace CampusGuide.Views.Favorites
 
         private static Color Themed(string light, string dark) => Color.Parse(IsDark ? dark : light);
 
-        private VerticalStackLayout CreateFavoriteTemplate()
+        private View CreateFavoriteTemplate()
         {
             var container = new VerticalStackLayout
             {
@@ -271,7 +268,7 @@ namespace CampusGuide.Views.Favorites
                 StrokeShape = new RoundRectangle { CornerRadius = 16 },
                 Stroke = Colors.Transparent,
                 Padding = new Thickness(0),
-                Margin = new Thickness(20, 8, 20, 8),
+                Margin = new Thickness(16, 8, 16, 8),
                 BackgroundColor = Themed("#FFFFFF", "#1E1F22"),
                 Shadow = new Shadow
                 {
@@ -300,7 +297,7 @@ namespace CampusGuide.Views.Favorites
                 RightItems = new SwipeItems { removeSwipeItem }
             };
 
-            return new VerticalStackLayout { swipeView };
+            return swipeView;
         }
 
         private static async void OnFavoriteCardTapped(object? sender, TappedEventArgs e)
