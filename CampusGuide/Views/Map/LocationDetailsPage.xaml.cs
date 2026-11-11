@@ -1,6 +1,7 @@
 using Microsoft.Maui.Controls;
 using CampusGuide.Models;
 using CampusGuide.Services;
+using CampusGuide.ViewModels;
 using CampusGuide.ViewModels.Search;
 using System.Diagnostics;
 using Microsoft.Maui.Layouts;
@@ -315,6 +316,31 @@ namespace CampusGuide.Views.Map
                     layout.Add(tagLayout);
                 }
 
+                var saveButton = new Button
+                {
+                    Text = "Save to Favorites",
+                    TextColor = Color.Parse("#FFFFFF"),
+                    Background = Color.Parse("#7B61FF"),
+                    FontSize = 14,
+                    FontAttributes = FontAttributes.Bold,
+                    Padding = new Thickness(20, 12),
+                    CornerRadius = 8,
+                    Margin = new Thickness(0, 20, 0, 0)
+                };
+                SemanticProperties.SetDescription(saveButton, "Save this location to your favorites");
+                saveButton.Clicked += async (s, e) =>
+                {
+                    var favoritesViewModel = ServiceHelper.GetService<FavoritesViewModel>();
+                    if (favoritesViewModel is null || _location is null)
+                        return;
+
+                    saveButton.IsEnabled = false;
+                    await favoritesViewModel.AddFavorite(_location);
+                    await UpdateSaveButtonStateAsync(saveButton);
+                };
+                layout.Add(saveButton);
+                _ = UpdateSaveButtonStateAsync(saveButton);
+
                 // Add spacing before button
                 layout.Add(new BoxView { HeightRequest = 20, IsVisible = false });
 
@@ -352,6 +378,20 @@ namespace CampusGuide.Views.Map
                 scrollView.Content = layout;
                 Content = scrollView;
             });
+        }
+
+        private async Task UpdateSaveButtonStateAsync(Button saveButton)
+        {
+            var favoritesService = ServiceHelper.GetService<IFavoritesService>();
+            if (favoritesService is null || _location is null)
+                return;
+
+            var favorites = await favoritesService.GetFavoritesAsync();
+            var isSaved = favorites.Any(f => f.LocationId == _location.Id);
+
+            saveButton.Text = isSaved ? "Saved to Favorites" : "Save to Favorites";
+            saveButton.Background = Color.Parse(isSaved ? "#B0B0B0" : "#7B61FF");
+            saveButton.IsEnabled = !isSaved;
         }
 
         private void DisplayLocationNotFound()
