@@ -50,7 +50,7 @@ namespace CampusGuide.Views.Favorites
             var headerLabel = new Label
             {
                 FontSize = 14,
-                TextColor = Colors.Gray,
+                TextColor = Themed("#6B6B6B", "#B0B3B8"),
                 Margin = new Thickness(16, 12, 16, 8)
             };
             headerLabel.SetBinding(Label.TextProperty, new Binding(nameof(FavoritesViewModel.CountText), source: _viewModel));
@@ -87,6 +87,7 @@ namespace CampusGuide.Views.Favorites
             loadingStack.Add(new Label
             {
                 Text = "Loading favorites...",
+                TextColor = Themed("#6B6B6B", "#B0B3B8"),
                 HorizontalTextAlignment = TextAlignment.Center
             });
 
@@ -123,10 +124,16 @@ namespace CampusGuide.Views.Favorites
                 WidthRequest = 80,
                 HeightRequest = 80,
                 HorizontalOptions = LayoutOptions.Center,
-                Content = new Label
+                Content = new Microsoft.Maui.Controls.Shapes.Path
                 {
-                    Text = "\u2764\uFE0F",
-                    FontSize = 36,
+                    Data = new PathGeometryConverter().ConvertFromInvariantString("M 12,21 C 12,21 3,14.5 3,8.5 C 3,5.4 5.4,3 8.5,3 C 10.2,3 11.5,3.9 12,5 C 12.5,3.9 13.8,3 15.5,3 C 18.6,3 21,5.4 21,8.5 C 21,14.5 12,21 12,21 Z") as Geometry,
+                    Stroke = new SolidColorBrush(Themed("#00695C", "#4DB6AC")),
+                    StrokeThickness = 2.5,
+                    StrokeLineJoin = PenLineJoin.Round,
+                    Fill = Colors.Transparent,
+                    Aspect = Stretch.Uniform,
+                    WidthRequest = 36,
+                    HeightRequest = 36,
                     HorizontalOptions = LayoutOptions.Center,
                     VerticalOptions = LayoutOptions.Center
                 }
@@ -187,6 +194,8 @@ namespace CampusGuide.Views.Favorites
             var dismissErrorButton = new Button
             {
                 Text = "Dismiss",
+                BackgroundColor = Themed("#00695C", "#4DB6AC"),
+                TextColor = Themed("#FFFFFF", "#121212"),
                 Margin = new Thickness(0, 5, 0, 0)
             };
             SemanticProperties.SetDescription(dismissErrorButton, "Dismiss error message");
