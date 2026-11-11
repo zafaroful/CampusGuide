@@ -99,7 +99,7 @@ namespace CampusGuide.Views.Favorites
             // CollectionView for favorites
             var collectionView = new CollectionView
             {
-                SelectionMode = SelectionMode.Single,
+                SelectionMode = SelectionMode.None,
                 HorizontalOptions = LayoutOptions.Fill,
                 VerticalOptions = LayoutOptions.Fill,
                 Margin = 0
