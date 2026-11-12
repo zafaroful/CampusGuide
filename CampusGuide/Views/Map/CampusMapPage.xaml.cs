@@ -929,11 +929,19 @@ namespace CampusGuide.Views.Map
             if (string.IsNullOrEmpty(_focusLocationId) || _map == null || _viewModel == null)
                 return;
 
-            var location = _viewModel.Locations.FirstOrDefault(l => l.Id == _focusLocationId);
+            var focusId = _focusLocationId;
+            var location = _viewModel.Locations.FirstOrDefault(l => l.Id == focusId);
             _focusLocationId = null;
 
             if (location?.Coordinates == null)
                 return;
+
+            var cluster = _viewModel.ClusterPins.FirstOrDefault(c => c.IsCluster && c.Pins.Any(p => p.LocationId == focusId));
+            if (cluster != null && !cluster.IsExpanded)
+            {
+                _viewModel.ExpandCluster(cluster);
+                RefreshMapPins();
+            }
 
             _map.MoveToRegion(MapSpan.FromCenterAndRadius(
                 new Microsoft.Maui.Devices.Sensors.Location(location.Coordinates.Latitude, location.Coordinates.Longitude),
