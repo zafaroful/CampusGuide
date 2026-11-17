@@ -1,4 +1,5 @@
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls.Shapes;
 using CampusGuide.ViewModels;
 using CampusGuide.Views.Controls;
@@ -18,7 +19,34 @@ namespace CampusGuide.Views.Home
                 BindingContext = _viewModel;
                 System.Diagnostics.Debug.WriteLine("✓ HomeViewModel created and bound");
 
-                var layout = new VerticalStackLayout { Padding = new Thickness(16, 20), Spacing = 20 };
+                Title = "Home";
+                Content = BuildLayout();
+                Application.Current!.RequestedThemeChanged += OnRequestedThemeChanged;
+                System.Diagnostics.Debug.WriteLine("✓ HomePage layout built successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"✗ HomePage constructor failed: {ex.GetType().Name}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"  StackTrace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        private void OnRequestedThemeChanged(object? sender, AppThemeChangedEventArgs e)
+        {
+            MainThread.BeginInvokeOnMainThread(() => Content = BuildLayout());
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+            if (Application.Current is not null)
+                Application.Current.RequestedThemeChanged -= OnRequestedThemeChanged;
+        }
+
+        private ScrollView BuildLayout()
+        {
+            var layout = new VerticalStackLayout { Padding = new Thickness(16, 20), Spacing = 20 };
 
                 var headerContent = new VerticalStackLayout { Spacing = 4 };
                 var welcomeLabel = new Label { Text = "Welcome to CampusGuide", FontSize = 26, FontAttributes = FontAttributes.Bold, TextColor = Colors.White };
@@ -89,17 +117,8 @@ namespace CampusGuide.Views.Home
                 updatesCard.Content = updatesContent;
                 layout.Add(updatesCard);
 
-                Content = new ScrollView { Content = layout };
-                Title = "Home";
-                System.Diagnostics.Debug.WriteLine("✓ HomePage layout built successfully");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"✗ HomePage constructor failed: {ex.GetType().Name}: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"  StackTrace: {ex.StackTrace}");
-                throw;
-            }
-        }
+                    return new ScrollView { Content = layout };
+                }
 
         private static Border CreateScanCard(System.Windows.Input.ICommand command)
         {
