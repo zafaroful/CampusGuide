@@ -194,6 +194,16 @@ namespace CampusGuide.Services
 
         static Coordinates? GetCoordinates(JsonNode? fields)
         {
+            var geoPoint = fields?["coordinates"]?["geoPointValue"];
+            if (geoPoint != null)
+            {
+                return new Coordinates
+                {
+                    Latitude = geoPoint["latitude"]?.GetValue<double>() ?? 0.0,
+                    Longitude = geoPoint["longitude"]?.GetValue<double>() ?? 0.0,
+                };
+            }
+
             var map = fields?["coordinates"]?["mapValue"]?["fields"];
             if (map == null)
                 return null;

@@ -22,6 +22,7 @@ namespace CampusGuide.Views.Notifications
             }
             BindingContext = _viewModel;
             Title = "Alerts";
+            BackgroundColor = ThemeHelper.Themed("#F5F7F8", "#121212");
 
             InitializeUI();
         }
@@ -162,7 +163,8 @@ namespace CampusGuide.Views.Notifications
                 Padding = new Thickness(16, 8),
                 FontSize = 12,
                 CornerRadius = 20,
-                BorderWidth = 1
+                BorderWidth = 1,
+                MinimumHeightRequest = 44
             };
             SemanticProperties.SetDescription(chip, description);
             _filterChips.Add((chip, type));
@@ -174,9 +176,10 @@ namespace CampusGuide.Views.Notifications
             foreach (var (chip, type) in _filterChips)
             {
                 var selected = type == _selectedFilter;
-                chip.BackgroundColor = selected ? ThemeHelper.Accent : Colors.Transparent;
-                chip.BorderColor = ThemeHelper.Accent;
-                chip.TextColor = selected ? Colors.White : ThemeHelper.Accent;
+                var accent = ThemeHelper.Themed("#087F70", "#4DB6AC");
+                chip.BackgroundColor = selected ? accent : Colors.Transparent;
+                chip.BorderColor = accent;
+                chip.TextColor = selected ? Colors.White : accent;
             }
         }
 
@@ -283,7 +286,7 @@ namespace CampusGuide.Views.Notifications
             {
                 Content = container,
                 StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(16) },
-                Stroke = ThemeHelper.CardBorder,
+                Stroke = ThemeHelper.Themed("#E2E8F0", "#3A3D42"),
                 StrokeThickness = 1,
                 Padding = 0,
                 Margin = new Thickness(16, 8),

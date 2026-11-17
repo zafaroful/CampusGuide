@@ -1,6 +1,7 @@
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
 using CampusGuide.ViewModels;
+using CampusGuide.Views.Controls;
 
 namespace CampusGuide.Views.Home
 {
@@ -20,24 +21,17 @@ namespace CampusGuide.Views.Home
                 var layout = new VerticalStackLayout { Padding = new Thickness(16, 20), Spacing = 20 };
 
                 var headerContent = new VerticalStackLayout { Spacing = 4 };
-                headerContent.Add(new Label { Text = "Welcome to CampusGuide", FontSize = 26, FontAttributes = FontAttributes.Bold, TextColor = Colors.White });
-                headerContent.Add(new Label { Text = "Campus Navigation & Assistance", FontSize = 15, TextColor = Color.FromArgb("#E8EAF6") });
+                var welcomeLabel = new Label { Text = "Welcome to CampusGuide", FontSize = 26, FontAttributes = FontAttributes.Bold, TextColor = Colors.White };
+                SemanticProperties.SetHeadingLevel(welcomeLabel, SemanticHeadingLevel.Level1);
+                headerContent.Add(welcomeLabel);
+                headerContent.Add(new Label { Text = "Campus Navigation & Assistance", FontSize = 15, TextColor = Colors.White, Opacity = 0.9 });
 
                 var header = new Border
                 {
-                    Padding = 20,
+                    Padding = new Thickness(20, 22),
                     StrokeShape = new RoundRectangle { CornerRadius = 16 },
                     Stroke = Colors.Transparent,
-                    Background = new LinearGradientBrush
-                    {
-                        StartPoint = new Point(0, 0),
-                        EndPoint = new Point(1, 1),
-                        GradientStops =
-                        {
-                            new GradientStop(Color.FromArgb("#1A237E"), 0),
-                            new GradientStop(Color.FromArgb("#3949AB"), 1)
-                        }
-                    },
+                    BackgroundColor = (Color)Application.Current!.Resources["MapPrimary"],
                     Content = headerContent
                 };
                 layout.Add(header);
@@ -66,23 +60,31 @@ namespace CampusGuide.Views.Home
                 {
                     Padding = 20,
                     StrokeShape = new RoundRectangle { CornerRadius = 16 },
-                    Stroke = Colors.Transparent,
-                    BackgroundColor = ThemeColor("#F3F4F8", "#2A2D3A")
+                    Stroke = ThemeHelper.CardBorder,
+                    BackgroundColor = ThemeHelper.CardBackground
                 };
-                var updatesContent = new VerticalStackLayout { Spacing = 10, HorizontalOptions = LayoutOptions.Center };
-                updatesContent.Add(new Label { Text = "Campus Updates", FontAttributes = FontAttributes.Bold, FontSize = 16, HorizontalTextAlignment = TextAlignment.Center });
+                var updatesContent = new VerticalStackLayout { Spacing = 12 };
+                var updatesHeader = new HorizontalStackLayout { Spacing = 10 };
+                updatesHeader.Add(new Label { Text = "\U0001F4E2", FontSize = 18, VerticalOptions = LayoutOptions.Center, TextColor = ThemeHelper.Accent });
+                updatesHeader.Add(new Label { Text = "Campus Updates", FontAttributes = FontAttributes.Bold, FontSize = 16, TextColor = ThemeHelper.BodyText, VerticalOptions = LayoutOptions.Center });
+                updatesContent.Add(updatesHeader);
 
                 var homeLoadingStack = new VerticalStackLayout { Spacing = 10, HorizontalOptions = LayoutOptions.Center };
-                homeLoadingStack.Add(new ActivityIndicator { IsRunning = true });
-                homeLoadingStack.Add(new Label { Text = "Loading campus updates...", HorizontalTextAlignment = TextAlignment.Center });
+                homeLoadingStack.Add(new ActivityIndicator { IsRunning = true, Color = ThemeHelper.Accent });
+                homeLoadingStack.Add(new Label { Text = "Loading campus updates...", TextColor = ThemeHelper.MutedText, HorizontalTextAlignment = TextAlignment.Center });
                 homeLoadingStack.SetBinding(IsVisibleProperty, new Binding("IsLoading", source: _viewModel));
                 updatesContent.Add(homeLoadingStack);
 
                 var homeEmptyStack = new VerticalStackLayout { Spacing = 5, HorizontalOptions = LayoutOptions.Center };
-                homeEmptyStack.Add(new Label { Text = "No campus updates right now", FontAttributes = FontAttributes.Bold, HorizontalTextAlignment = TextAlignment.Center });
-                homeEmptyStack.Add(new Label { Text = "Check back later for announcements.", FontSize = 14, TextColor = Colors.Gray, HorizontalTextAlignment = TextAlignment.Center });
+                homeEmptyStack.Add(new Label { Text = "No campus updates right now", FontAttributes = FontAttributes.Bold, TextColor = ThemeHelper.BodyText, HorizontalTextAlignment = TextAlignment.Center });
+                homeEmptyStack.Add(new Label { Text = "Check back later for announcements.", FontSize = 14, TextColor = ThemeHelper.MutedText, HorizontalTextAlignment = TextAlignment.Center });
                 homeEmptyStack.SetBinding(IsVisibleProperty, new Binding("IsEmpty", source: _viewModel));
                 updatesContent.Add(homeEmptyStack);
+
+                var announcementsStack = new VerticalStackLayout { Spacing = 10 };
+                announcementsStack.SetBinding(BindableLayout.ItemsSourceProperty, new Binding("Announcements", source: _viewModel));
+                BindableLayout.SetItemTemplate(announcementsStack, new DataTemplate(() => CreateAnnouncementCard()));
+                updatesContent.Add(announcementsStack);
 
                 updatesCard.Content = updatesContent;
                 layout.Add(updatesCard);
@@ -106,13 +108,14 @@ namespace CampusGuide.Views.Home
                 Padding = 20,
                 StrokeShape = new RoundRectangle { CornerRadius = 20 },
                 Stroke = Colors.Transparent,
-                BackgroundColor = ThemeColor("#00695C", "#00796B"),
+                BackgroundColor = (Color)Application.Current!.Resources["MapPrimary"],
+                MinimumHeightRequest = 64,
                 Content = new HorizontalStackLayout
                 {
                     Spacing = 20,
                     Children =
                     {
-                        new Label { Text = "\u25A3", FontSize = 48, TextColor = Colors.White, VerticalOptions = LayoutOptions.Center },
+                        new Label { Text = "\u25A3", FontSize = 40, TextColor = Colors.White, VerticalOptions = LayoutOptions.Center },
                         new VerticalStackLayout
                         {
                             Spacing = 4,
@@ -127,7 +130,13 @@ namespace CampusGuide.Views.Home
                 }
             };
             SemanticProperties.SetDescription(card, "Opens the QR code scanner");
-            card.GestureRecognizers.Add(new TapGestureRecognizer { Command = command });
+            var tap = new TapGestureRecognizer { Command = command };
+            tap.Tapped += async (s, e) =>
+            {
+                await Task.WhenAll(card.FadeTo(0.85, 80), card.ScaleTo(0.97, 80));
+                await Task.WhenAll(card.FadeTo(1, 120), card.ScaleTo(1, 120));
+            };
+            card.GestureRecognizers.Add(tap);
             return card;
         }
 
@@ -135,35 +144,47 @@ namespace CampusGuide.Views.Home
         {
             var tile = new Border
             {
-                Padding = 16,
+                Padding = new Thickness(16, 14),
                 StrokeShape = new RoundRectangle { CornerRadius = 14 },
-                Stroke = ThemeColor("#D0D5E2", "#4A4F63"),
-                BackgroundColor = Colors.Transparent,
-                MinimumHeightRequest = 48,
-                Content = new HorizontalStackLayout
+                Stroke = ThemeHelper.CardBorder,
+                BackgroundColor = ThemeHelper.CardBackground,
+                MinimumHeightRequest = 96,
+                Content = new VerticalStackLayout
                 {
-                    Spacing = 12,
+                    Spacing = 8,
+                    VerticalOptions = LayoutOptions.Center,
                     Children =
                     {
-                        new Label { Text = icon, FontSize = 26, VerticalOptions = LayoutOptions.Center },
-                        new VerticalStackLayout
-                        {
-                            Spacing = 2,
-                            VerticalOptions = LayoutOptions.Center,
-                            Children =
-                            {
-                                new Label { Text = title, FontSize = 16, FontAttributes = FontAttributes.Bold },
-                                new Label { Text = subtitle, FontSize = 12, TextColor = Colors.Gray }
-                            }
-                        }
+                        new Label { Text = icon, FontSize = 24, TextColor = ThemeHelper.Accent, HorizontalOptions = LayoutOptions.Start },
+                        new Label { Text = title, FontSize = 16, FontAttributes = FontAttributes.Bold, TextColor = ThemeHelper.BodyText },
+                        new Label { Text = subtitle, FontSize = 12, TextColor = ThemeHelper.MutedText }
                     }
                 }
             };
-            tile.Stroke = ThemeColor("#D0D5E2", "#4A4F63");
             SemanticProperties.SetDescription(tile, subtitle);
             tile.GestureRecognizers.Add(new TapGestureRecognizer { Command = command });
             return tile;
         }
+
+        private static Border CreateAnnouncementCard()
+        {
+            var card = new Border
+            {
+                Padding = new Thickness(14, 12),
+                StrokeShape = new RoundRectangle { CornerRadius = 12 },
+                Stroke = ThemeHelper.CardBorder,
+                BackgroundColor = ThemeHelper.CardBackground
+            };
+            var titleLabel = new Label { FontAttributes = FontAttributes.Bold, FontSize = 15, TextColor = ThemeHelper.BodyText };
+            titleLabel.SetBinding(Label.TextProperty, new Binding("Title"));
+            var bodyLabel = new Label { FontSize = 14, TextColor = ThemeHelper.MutedText };
+            bodyLabel.SetBinding(Label.TextProperty, new Binding("Body"));
+            var dateLabel = new Label { FontSize = 12, TextColor = ThemeHelper.MutedText };
+            dateLabel.SetBinding(Label.TextProperty, new Binding("CreatedAt", stringFormat: "{0:dd MMM yyyy, h:mm tt}"));
+            card.Content = new VerticalStackLayout { Spacing = 4, Children = { titleLabel, bodyLabel, dateLabel } };
+            return card;
+        }
+
 
         private static Color ThemeColor(string light, string dark)
         {

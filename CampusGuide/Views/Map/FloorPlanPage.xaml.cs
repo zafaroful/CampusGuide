@@ -97,8 +97,8 @@ public partial class FloorPlanPage : ContentPage
             // Update header
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                BuildingNameLabel.Text = $"Building: {building.Name}";
-                FloorCountLabel.Text = $"Floors: {building.Floors.Count}";
+                BuildingNameLabel.Text = building.Name;
+                FloorCountLabel.Text = $"{building.Floors.Count} floor{(building.Floors.Count != 1 ? "s" : "")}";
             });
 
             // Load floor plans
@@ -192,13 +192,15 @@ public partial class FloorPlanPage : ContentPage
                 {
                     Text = displayName,
                     StyleId = level,
-                    BackgroundColor = _viewModel.SelectedFloorLevel == level ? Color.FromArgb("#FFD60A") : Colors.White,
-                    TextColor = _viewModel.SelectedFloorLevel == level ? Colors.Black : Color.FromArgb("#512BD4"),
-                    BorderColor = Color.FromArgb("#512BD4"),
-                    BorderWidth = 2,
-                    CornerRadius = 5,
-                    Padding = new Thickness(8, 4),
-                    FontSize = 11,
+                    BackgroundColor = _viewModel.SelectedFloorLevel == level ? Color.FromArgb("#087F70") : Color.FromArgb("#FFFFFF"),
+                    TextColor = _viewModel.SelectedFloorLevel == level ? Color.FromArgb("#FFFFFF") : Color.FromArgb("#087F70"),
+                    BorderColor = Color.FromArgb("#E2E8F0"),
+                    BorderWidth = 1,
+                    CornerRadius = 12,
+                    Padding = new Thickness(16, 8),
+                    FontSize = 13,
+                    FontAttributes = FontAttributes.Bold,
+                    MinimumHeightRequest = 40,
                     HorizontalOptions = LayoutOptions.Start,
                     IsEnabled = true  // Explicitly enable button
                 };
@@ -227,8 +229,9 @@ public partial class FloorPlanPage : ContentPage
         foreach (var button in FloorSelectorLayout.Children.OfType<Button>())
         {
             var isSelected = button.StyleId == _viewModel.SelectedFloorLevel;
-            button.BackgroundColor = isSelected ? Color.FromArgb("#FFD60A") : Colors.White;
-            button.TextColor = isSelected ? Colors.Black : Color.FromArgb("#512BD4");
+            button.BackgroundColor = isSelected ? Color.FromArgb("#087F70") : Color.FromArgb("#FFFFFF");
+            button.TextColor = isSelected ? Color.FromArgb("#FFFFFF") : Color.FromArgb("#087F70");
+            button.BorderColor = isSelected ? Color.FromArgb("#087F70") : Color.FromArgb("#E2E8F0");
         }
     }
 
@@ -330,7 +333,8 @@ public partial class FloorPlanPage : ContentPage
         {
             LocationsCollectionView.ItemsSource = null; // Clear first
             LocationsCollectionView.ItemsSource = _viewModel.LocationsOnFloor;
-            LocationCountLabel.Text = $"Total: {_viewModel.LocationsOnFloor.Count} location{(_viewModel.LocationsOnFloor.Count != 1 ? "s" : "")}";
+            FloorInfoLabel.Text = $"Floor {_viewModel.SelectedFloorLevel} · {_viewModel.LocationsOnFloor.Count} location{(_viewModel.LocationsOnFloor.Count != 1 ? "s" : "")}";
+            LocationCountLabel.Text = $"Total on floor: {_viewModel.LocationsOnFloor.Count}";
             Debug.WriteLine($"FloorPlanPage: Updated locations list with {_viewModel.LocationsOnFloor.Count} items");
         });
     }

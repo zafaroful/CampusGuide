@@ -94,7 +94,7 @@ namespace CampusGuide.Services
                     Type = "library",
                     Building = "Academic Block A",
                     Floor = "3",
-                    Coordinates = new Coordinates { Latitude = 5.3971, Longitude = 100.3084 },
+                    Coordinates = new Coordinates { Latitude = 3.1390, Longitude = 101.6869 },
                     Images = new List<string> { "library1.jpg", "library2.jpg" },
                     Tags = new List<string> { "library", "study", "quiet", "computers" },
                     QrCodeId = "campus://location/lib-001"
@@ -107,7 +107,7 @@ namespace CampusGuide.Services
                     Type = "Food",
                     Building = "Food Court",
                     Floor = "G",
-                    Coordinates = new Coordinates { Latitude = 5.3968, Longitude = 100.3080 },
+                    Coordinates = new Coordinates { Latitude = 3.1396, Longitude = 101.6876 },
                     Images = new List<string> { "cafeteria.jpg" },
                     Tags = new List<string> { "food", "cafeteria", "seating", "halal", "vegetarian" },
                     QrCodeId = "campus://location/cafe-001"
@@ -120,7 +120,7 @@ namespace CampusGuide.Services
                     Type = "sports",
                     Building = "Recreation Building",
                     Floor = "B1-2",
-                    Coordinates = new Coordinates { Latitude = 5.3965, Longitude = 100.3075 },
+                    Coordinates = new Coordinates { Latitude = 3.1385, Longitude = 101.6860 },
                     Images = new List<string> { "gym.jpg", "courts.jpg" },
                     Tags = new List<string> { "sports", "gym", "fitness", "court", "swimming" },
                     QrCodeId = "campus://location/gym-001"
@@ -133,7 +133,7 @@ namespace CampusGuide.Services
                     Type = "lab",
                     Building = "Engineering Block",
                     Floor = "2",
-                    Coordinates = new Coordinates { Latitude = 5.3978, Longitude = 100.3088 },
+                    Coordinates = new Coordinates { Latitude = 3.1388, Longitude = 101.6872 },
                     Images = new List<string> { "lab.jpg" },
                     Tags = new List<string> { "lab", "computers", "programming", "research", "ai" },
                     QrCodeId = "campus://location/lab-001"
@@ -146,7 +146,7 @@ namespace CampusGuide.Services
                     Type = "auditorium",
                     Building = "Academic Block",
                     Floor = "G",
-                    Coordinates = new Coordinates { Latitude = 5.3972, Longitude = 100.3080 },
+                    Coordinates = new Coordinates { Latitude = 3.1392, Longitude = 101.6866 },
                     Images = new List<string> { "auditorium.jpg" },
                     Tags = new List<string> { "auditorium", "lecture", "events", "seating" },
                     QrCodeId = "campus://location/aud-001"
@@ -159,7 +159,7 @@ namespace CampusGuide.Services
                     Type = "health",
                     Building = "Medical Building",
                     Floor = "1",
-                    Coordinates = new Coordinates { Latitude = 5.3978, Longitude = 100.3093 },
+                    Coordinates = new Coordinates { Latitude = 3.1398, Longitude = 101.6878 },
                     Images = new List<string> { "health.jpg" },
                     Tags = new List<string> { "health", "medical", "clinic", "doctor" },
                     QrCodeId = "campus://location/health-001"
@@ -172,7 +172,7 @@ namespace CampusGuide.Services
                     Type = "Facility",
                     Building = "Center Block",
                     Floor = "G",
-                    Coordinates = new Coordinates { Latitude = 5.3975, Longitude = 100.3090 },
+                    Coordinates = new Coordinates { Latitude = 3.1393, Longitude = 101.6870 },
                     Images = new List<string>(),
                     Tags = new List<string> { "facility", "student", "gathering" },
                     QrCodeId = "campus://location/student-center-001"
@@ -212,7 +212,7 @@ namespace CampusGuide.Services
                     StartTime = DateTime.UtcNow.AddDays(3),
                     EndTime = DateTime.UtcNow.AddDays(3).AddHours(2),
                     LocationId = "aud-001",
-                    Coordinates = new Coordinates { Latitude = 5.3972, Longitude = 100.3080 },
+                    Coordinates = new Coordinates { Latitude = 3.1392, Longitude = 101.6866 },
                     ImageUrl = "tour.jpg",
                     IsPublished = true
                 },
@@ -224,7 +224,7 @@ namespace CampusGuide.Services
                     StartTime = DateTime.UtcNow.AddDays(5),
                     EndTime = DateTime.UtcNow.AddDays(5).AddHours(1),
                     LocationId = "aud-001",
-                    Coordinates = new Coordinates { Latitude = 5.3972, Longitude = 100.3080 },
+                    Coordinates = new Coordinates { Latitude = 3.1392, Longitude = 101.6866 },
                     ImageUrl = "tech_talk.jpg",
                     IsPublished = true
                 },
@@ -236,7 +236,7 @@ namespace CampusGuide.Services
                     StartTime = DateTime.UtcNow.AddDays(7),
                     EndTime = DateTime.UtcNow.AddDays(7).AddHours(6),
                     LocationId = "gym-001",
-                    Coordinates = new Coordinates { Latitude = 5.3965, Longitude = 100.3075 },
+                    Coordinates = new Coordinates { Latitude = 3.1385, Longitude = 101.6860 },
                     ImageUrl = "sports_day.jpg",
                     IsPublished = true
                 },
@@ -248,7 +248,7 @@ namespace CampusGuide.Services
                     StartTime = DateTime.UtcNow.AddDays(2),
                     EndTime = DateTime.UtcNow.AddDays(2).AddHours(1).AddMinutes(30),
                     LocationId = "lib-001",
-                    Coordinates = new Coordinates { Latitude = 5.3971, Longitude = 100.3084 },
+                    Coordinates = new Coordinates { Latitude = 3.1390, Longitude = 101.6869 },
                     ImageUrl = "workshop.jpg",
                     IsPublished = true
                 },
@@ -260,7 +260,7 @@ namespace CampusGuide.Services
                     StartTime = DateTime.UtcNow.AddDays(10),
                     EndTime = DateTime.UtcNow.AddDays(10).AddHours(2),
                     LocationId = "cafeteria-001",
-                    Coordinates = new Coordinates { Latitude = 5.3968, Longitude = 100.3080 },
+                    Coordinates = new Coordinates { Latitude = 3.1396, Longitude = 101.6876 },
                     ImageUrl = "networking.jpg",
                     IsPublished = true
                 }

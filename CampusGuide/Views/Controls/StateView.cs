@@ -18,14 +18,16 @@ namespace CampusGuide.Views.Controls
                 Add(icon);
             }
 
-            Add(new Label
+            var titleLabel = new Label
             {
                 Text = title,
                 FontSize = 20,
                 FontAttributes = FontAttributes.Bold,
                 TextColor = ThemeHelper.BodyText,
                 HorizontalTextAlignment = TextAlignment.Center
-            });
+            };
+            SemanticProperties.SetHeadingLevel(titleLabel, SemanticHeadingLevel.Level2);
+            Add(titleLabel);
 
             MessageLabel = new Label
             {
@@ -46,8 +48,10 @@ namespace CampusGuide.Views.Controls
                     CornerRadius = 20,
                     Padding = new Thickness(24, 8),
                     Margin = new Thickness(0, 8, 0, 0),
-                    HorizontalOptions = LayoutOptions.Center
+                    HorizontalOptions = LayoutOptions.Center,
+                    MinimumHeightRequest = 44
                 };
+                SemanticProperties.SetDescription(actionButton, actionText);
                 actionButton.Clicked += (s, e) => onAction();
                 Add(actionButton);
             }

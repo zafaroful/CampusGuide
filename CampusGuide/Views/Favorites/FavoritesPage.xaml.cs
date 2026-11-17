@@ -17,6 +17,7 @@ namespace CampusGuide.Views.Favorites
         public FavoritesPage()
         {
             Title = "Favorites";
+            BackgroundColor = Themed("#F5F7F8", "#121212");
             _viewModel = ServiceHelper.GetService<FavoritesViewModel>();
             BindingContext = _viewModel;
 
@@ -31,7 +32,7 @@ namespace CampusGuide.Views.Favorites
                 Command = _viewModel?.RefreshFavoritesCommand,
                 HorizontalOptions = LayoutOptions.Fill,
                 VerticalOptions = LayoutOptions.Fill,
-                RefreshColor = Themed("#00695C", "#4DB6AC")
+                RefreshColor = Themed("#087F70", "#4DB6AC")
             };
 
             // Bind IsRefreshing to show loading state during refresh
@@ -83,7 +84,7 @@ namespace CampusGuide.Views.Favorites
             {
                 IsRunning = true,
                 IsVisible = true,
-                Color = Themed("#00695C", "#4DB6AC"),
+                Color = Themed("#087F70", "#4DB6AC"),
                 Scale = 1.5
             });
             loadingStack.Add(new Label
@@ -122,7 +123,7 @@ namespace CampusGuide.Views.Favorites
                     Content = new Microsoft.Maui.Controls.Shapes.Path
                     {
                         Data = new PathGeometryConverter().ConvertFromInvariantString("M 12,21 C 12,21 3,14.5 3,8.5 C 3,5.4 5.4,3 8.5,3 C 10.2,3 11.5,3.9 12,5 C 12.5,3.9 13.8,3 15.5,3 C 18.6,3 21,5.4 21,8.5 C 21,14.5 12,21 12,21 Z") as Geometry,
-                        Stroke = new SolidColorBrush(Themed("#00695C", "#4DB6AC")),
+                        Stroke = new SolidColorBrush(Themed("#087F70", "#4DB6AC")),
                         StrokeThickness = 2.5,
                         StrokeLineJoin = PenLineJoin.Round,
                         Fill = Colors.Transparent,
@@ -159,9 +160,10 @@ namespace CampusGuide.Views.Favorites
             var dismissErrorButton = new Button
             {
                 Text = "Dismiss",
-                BackgroundColor = Themed("#00695C", "#4DB6AC"),
+                BackgroundColor = Themed("#087F70", "#4DB6AC"),
                 TextColor = Themed("#FFFFFF", "#121212"),
-                Margin = new Thickness(0, 5, 0, 0)
+                Margin = new Thickness(0, 5, 0, 0),
+                MinimumHeightRequest = 44
             };
             SemanticProperties.SetDescription(dismissErrorButton, "Dismiss error message");
             dismissErrorButton.Clicked += (s, e) =>
@@ -212,9 +214,10 @@ namespace CampusGuide.Views.Favorites
                 Text = "Remove",
                 Padding = new Thickness(12, 6),
                 FontSize = 12,
-                BackgroundColor = Themed("#FFEBEE", "#4A2A2A"),
-                TextColor = Themed("#D32F2F", "#FF8A80"),
-                CornerRadius = 12
+                BackgroundColor = Themed("#E8F5F2", "#1F3B38"),
+                TextColor = Themed("#087F70", "#4DB6AC"),
+                CornerRadius = 12,
+                MinimumHeightRequest = 44
             };
             SemanticProperties.SetDescription(removeButton, "Remove from favorites");
             removeButton.SetBinding(Button.CommandProperty, new Binding("RemoveFavoriteCommand", source: _viewModel));
@@ -254,7 +257,7 @@ namespace CampusGuide.Views.Favorites
             {
                 Content = container,
                 StrokeShape = new RoundRectangle { CornerRadius = 16 },
-                Stroke = Colors.Transparent,
+                Stroke = Themed("#E2E8F0", "#3A3D42"),
                 Padding = new Thickness(0),
                 Margin = new Thickness(16, 8, 16, 8),
                 BackgroundColor = Themed("#FFFFFF", "#1E1F22"),

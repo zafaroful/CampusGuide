@@ -103,61 +103,60 @@ namespace CampusGuide.Views.Map
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                var scrollView = new ScrollView();
-                var layout = new VerticalStackLayout { Padding = new Thickness(24, 20), Spacing = 4 };
+                var scrollView = new ScrollView { BackgroundColor = ThemeHelper.Themed("#F5F7F8", "#121212") };
+                var layout = new VerticalStackLayout { Padding = new Thickness(16, 16), Spacing = 12 };
 
                 // Title
-                layout.Add(new Label
+                var titleLabel = new Label
                 {
                     Text = _location.Name,
-                    FontSize = 26,
+                    FontSize = 24,
                     FontAttributes = FontAttributes.Bold,
                     TextColor = ThemeHelper.BodyText
-                });
+                };
+                SemanticProperties.SetHeadingLevel(titleLabel, SemanticHeadingLevel.Level1);
+                layout.Add(titleLabel);
 
                 // Type/Category
                 layout.Add(new Label
                 {
                     Text = _location.Type,
                     FontSize = 14,
-                    TextColor = ThemeHelper.MutedText,
-                    FontAttributes = FontAttributes.Italic
-                });
-
-                // Divider
-                layout.Add(new BoxView
-                {
-                    Color = ThemeHelper.CardBorder,
-                    HeightRequest = 1,
-                    Margin = new Thickness(0, 16)
+                    TextColor = ThemeHelper.Accent,
+                    FontAttributes = FontAttributes.Bold
                 });
 
                 // Description
                 if (!string.IsNullOrEmpty(_location.Description))
                 {
-                    layout.Add(CreateSectionLabel("Description"));
-                    layout.Add(CreateValueLabel(_location.Description));
+                    layout.Add(CreateCard(
+                        CreateSectionLabel("Description"),
+                        CreateValueLabel(_location.Description)));
                 }
 
                 // Building Information
+                var infoItems = new List<View>();
                 if (!string.IsNullOrEmpty(_location.Building))
                 {
-                    layout.Add(CreateSectionLabel("Building"));
-                    layout.Add(CreateValueLabel(_location.Building));
+                    infoItems.Add(CreateSectionLabel("Building"));
+                    infoItems.Add(CreateValueLabel(_location.Building));
                 }
 
                 // Floor Information
                 if (!string.IsNullOrEmpty(_location.Floor))
                 {
-                    layout.Add(CreateSectionLabel("Floor"));
-                    layout.Add(CreateValueLabel(_location.Floor));
+                    infoItems.Add(CreateSectionLabel("Floor"));
+                    infoItems.Add(CreateValueLabel(_location.Floor));
+                }
+
+                if (infoItems.Count > 0)
+                {
+                    layout.Add(CreateCard(infoItems.ToArray()));
                 }
 
                 // Coordinates
                 if (_location.Coordinates is not null)
                 {
-                    layout.Add(CreateSectionLabel("Coordinates"));
-
                     var coordGrid = new Grid
                     {
                         ColumnDefinitions = new ColumnDefinitionCollection
@@ -207,21 +206,20 @@ namespace CampusGuide.Views.Map
                         }
                     }, 1, 0);
 
-                    layout.Add(coordGrid);
+                    layout.Add(CreateCard(CreateSectionLabel("Coordinates"), coordGrid));
                 }
 
                 // QR Code ID
                 if (!string.IsNullOrEmpty(_location.QrCodeId))
                 {
-                    layout.Add(CreateSectionLabel("QR Code"));
-                    layout.Add(CreateValueLabel(_location.QrCodeId, 12, "Courier"));
+                    layout.Add(CreateCard(
+                        CreateSectionLabel("QR Code"),
+                        CreateValueLabel(_location.QrCodeId, 12, "Courier")));
                 }
 
                 // Tags
                 if (_location.Tags is not null && _location.Tags.Count > 0)
                 {
-                    layout.Add(CreateSectionLabel("Tags"));
-
                     var tagLayout = new FlexLayout
                     {
                         Wrap = FlexWrap.Wrap,
@@ -235,19 +233,19 @@ namespace CampusGuide.Views.Map
                         {
                             Padding = new Thickness(10, 4),
                             Margin = new Thickness(0, 0, 8, 8),
-                            BackgroundColor = ThemeHelper.Themed("#F0F0F0", "#2C2F33"),
+                            BackgroundColor = ThemeHelper.Themed("#E8F5F2", "#1F3B38"),
                             StrokeThickness = 0,
                             StrokeShape = new RoundRectangle { CornerRadius = 12 },
                             Content = new Label
                             {
                                 Text = tag,
                                 FontSize = 12,
-                                TextColor = ThemeHelper.MutedText
+                                TextColor = ThemeHelper.Accent
                             }
                         });
                     }
 
-                    layout.Add(tagLayout);
+                    layout.Add(CreateCard(CreateSectionLabel("Tags"), tagLayout));
                 }
 
                 var saveButton = new Button
@@ -258,8 +256,9 @@ namespace CampusGuide.Views.Map
                     FontSize = 14,
                     FontAttributes = FontAttributes.Bold,
                     Padding = new Thickness(20, 12),
-                    CornerRadius = 10,
-                    Margin = new Thickness(0, 24, 0, 0)
+                    CornerRadius = 12,
+                    MinimumHeightRequest = 48,
+                    Margin = new Thickness(0, 8, 0, 0)
                 };
                 SemanticProperties.SetDescription(saveButton, "Save this location to your favorites");
                 saveButton.Clicked += async (s, e) =>
@@ -288,26 +287,13 @@ namespace CampusGuide.Views.Map
                     FontSize = 14,
                     FontAttributes = FontAttributes.Bold,
                     Padding = new Thickness(20, 12),
-                    CornerRadius = 10,
-                    Margin = new Thickness(0, 12, 0, 0)
+                    CornerRadius = 12,
+                    MinimumHeightRequest = 48,
+                    Margin = new Thickness(0, 4, 0, 0)
                 };
                 SemanticProperties.SetDescription(viewOnMapButton, "View this location on the campus map");
                 viewOnMapButton.Clicked += async (s, e) => await Shell.Current.GoToAsync($"//map?focusId={Uri.EscapeDataString(_location.Id)}");
                 layout.Add(viewOnMapButton);
-
-                // Go Back Button
-                var backButton = new Button
-                {
-                    Text = "Go Back",
-                    TextColor = ThemeHelper.MutedText,
-                    BackgroundColor = Colors.Transparent,
-                    FontSize = 14,
-                    Padding = new Thickness(20, 12),
-                    Margin = new Thickness(0, 4, 0, 0)
-                };
-                SemanticProperties.SetDescription(backButton, "Go back to the previous page");
-                backButton.Clicked += async (s, e) => await Shell.Current.GoToAsync("..");
-                layout.Add(backButton);
 
                 scrollView.Content = layout;
                 Content = scrollView;
@@ -317,11 +303,27 @@ namespace CampusGuide.Views.Map
         private static Label CreateSectionLabel(string text) => new()
         {
             Text = text,
-            FontSize = 13,
+            FontSize = 12,
             FontAttributes = FontAttributes.Bold,
             TextColor = ThemeHelper.MutedText,
-            Margin = new Thickness(0, 16, 0, 2)
+            Margin = new Thickness(0, 12, 0, 2)
         };
+
+        private static Border CreateCard(params View[] children)
+        {
+            var stack = new VerticalStackLayout { Spacing = 4, Padding = new Thickness(16, 14) };
+            foreach (var child in children)
+                stack.Add(child);
+
+            return new Border
+            {
+                BackgroundColor = ThemeHelper.CardBackground,
+                Stroke = ThemeHelper.Themed("#E2E8F0", "#3A3D42"),
+                StrokeShape = new RoundRectangle { CornerRadius = 12 },
+                Padding = 0,
+                Content = stack
+            };
+        }
 
         private static Label CreateValueLabel(string text, double fontSize = 14, string? fontFamily = null) => new()
         {
@@ -357,7 +359,7 @@ namespace CampusGuide.Views.Map
                     Text = "Location Not Found",
                     FontSize = 20,
                     FontAttributes = FontAttributes.Bold,
-                    TextColor = Color.Parse("#FF4444"),
+                    TextColor = ThemeHelper.Danger,
                     Margin = new Thickness(0, 40, 0, 0)
                 });
 
@@ -365,18 +367,19 @@ namespace CampusGuide.Views.Map
                 {
                     Text = $"Unable to find location with ID: {_locationId}",
                     FontSize = 14,
-                    TextColor = Color.Parse("#666666"),
+                    TextColor = ThemeHelper.MutedText,
                     LineBreakMode = LineBreakMode.WordWrap
                 });
 
                 var backButton = new Button
                 {
                     Text = "Go Back to Map",
-                    TextColor = Color.Parse("#FFFFFF"),
-                    Background = Color.Parse("#7B61FF"),
+                    TextColor = Colors.White,
+                    BackgroundColor = ThemeHelper.Accent,
                     FontSize = 14,
                     Padding = new Thickness(20, 12),
                     CornerRadius = 8,
+                    MinimumHeightRequest = 44,
                     Margin = new Thickness(0, 40, 0, 0)
                 };
                 SemanticProperties.SetDescription(backButton, "Go back to the map");
@@ -398,7 +401,7 @@ namespace CampusGuide.Views.Map
                     Text = "Error Loading Location",
                     FontSize = 20,
                     FontAttributes = FontAttributes.Bold,
-                    TextColor = Color.Parse("#FF4444"),
+                    TextColor = ThemeHelper.Danger,
                     Margin = new Thickness(0, 40, 0, 0)
                 });
 
@@ -406,18 +409,19 @@ namespace CampusGuide.Views.Map
                 {
                     Text = errorMessage,
                     FontSize = 13,
-                    TextColor = Color.Parse("#999999"),
+                    TextColor = ThemeHelper.MutedText,
                     LineBreakMode = LineBreakMode.WordWrap
                 });
 
                 var backButton = new Button
                 {
                     Text = "Go Back",
-                    TextColor = Color.Parse("#FFFFFF"),
-                    Background = Color.Parse("#7B61FF"),
+                    TextColor = Colors.White,
+                    BackgroundColor = ThemeHelper.Accent,
                     FontSize = 14,
                     Padding = new Thickness(20, 12),
                     CornerRadius = 8,
+                    MinimumHeightRequest = 44,
                     Margin = new Thickness(0, 40, 0, 0)
                 };
                 backButton.Clicked += async (s, e) => await Shell.Current.GoToAsync("..");

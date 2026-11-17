@@ -8,8 +8,8 @@
       "building": "Academic Block A",
       "floor": "3",
       "coordinates": {
-        "latitude": 1.3521,
-        "longitude": 103.8198
+        "latitude": 3.1390,
+        "longitude": 101.6869
       },
       "images": [
         "https://via.placeholder.com/400x300?text=Central+Library",
@@ -26,8 +26,8 @@
       "building": "Food Court Building",
       "floor": "1",
       "coordinates": {
-        "latitude": 1.3530,
-        "longitude": 103.8210
+        "latitude": 3.1395,
+        "longitude": 101.6875
       },
       "images": [
         "https://via.placeholder.com/400x300?text=Main+Cafeteria"
@@ -43,8 +43,8 @@
       "building": "Athletic Building",
       "floor": "G",
       "coordinates": {
-        "latitude": 1.3515,
-        "longitude": 103.8185
+        "latitude": 3.1385,
+        "longitude": 101.6860
       },
       "images": [
         "https://via.placeholder.com/400x300?text=Sports+Complex"
@@ -60,8 +60,8 @@
       "building": "Engineering Block B",
       "floor": "2",
       "coordinates": {
-        "latitude": 1.3525,
-        "longitude": 103.8205
+        "latitude": 3.1388,
+        "longitude": 101.6872
       },
       "images": [
         "https://via.placeholder.com/400x300?text=CS+Lab"
@@ -77,8 +77,8 @@
       "building": "Academic Block C",
       "floor": "1",
       "coordinates": {
-        "latitude": 1.3535,
-        "longitude": 103.8220
+        "latitude": 3.1392,
+        "longitude": 101.6866
       },
       "images": [
         "https://via.placeholder.com/400x300?text=Lecture+Hall+A"
@@ -96,8 +96,8 @@
       "endTime": "2024-11-20T11:00:00Z",
       "locationId": "aud-001",
       "coordinates": {
-        "latitude": 1.3535,
-        "longitude": 103.8220
+        "latitude": 3.1392,
+        "longitude": 101.6866
       },
       "imageUrl": "https://via.placeholder.com/400x300?text=Campus+Orientation",
       "isPublished": true
@@ -110,8 +110,8 @@
       "endTime": "2024-11-22T16:00:00Z",
       "locationId": "aud-001",
       "coordinates": {
-        "latitude": 1.3535,
-        "longitude": 103.8220
+        "latitude": 3.1392,
+        "longitude": 101.6866
       },
       "imageUrl": "https://via.placeholder.com/400x300?text=Tech+Talks",
       "isPublished": true
@@ -124,8 +124,8 @@
       "endTime": "2024-11-26T08:00:00Z",
       "locationId": "lab-001",
       "coordinates": {
-        "latitude": 1.3525,
-        "longitude": 103.8205
+        "latitude": 3.1388,
+        "longitude": 101.6872
       },
       "imageUrl": "https://via.placeholder.com/400x300?text=Hackathon",
       "isPublished": true
@@ -138,8 +138,8 @@
       "endTime": "2024-11-28T17:00:00Z",
       "locationId": "gym-001",
       "coordinates": {
-        "latitude": 1.3515,
-        "longitude": 103.8185
+        "latitude": 3.1385,
+        "longitude": 101.6860
       },
       "imageUrl": "https://via.placeholder.com/400x300?text=Sports+Day",
       "isPublished": true

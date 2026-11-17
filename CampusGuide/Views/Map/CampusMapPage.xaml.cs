@@ -2,6 +2,8 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Maps;
 using Microsoft.Maui.Devices.Sensors;
+using Microsoft.Maui.Controls.Shapes;
+using Microsoft.Maui.Layouts;
 using CampusGuide.ViewModels.Map;
 using CampusGuide.Services;
 using CampusGuide.Models;
@@ -18,6 +20,7 @@ namespace CampusGuide.Views.Map
         private Microsoft.Maui.Controls.Maps.Map? _map;
         private string _currentFilter = "All";
         private Entry? _searchEntry;
+        private Label? _selectionSummaryLabel;
         private string? _focusLocationId;
         private readonly List<(string Type, CategoryChip Chip)> _filterChips = new();
 
@@ -99,9 +102,9 @@ namespace CampusGuide.Views.Map
                 // Header with title
             var headerLayout = new VerticalStackLayout
             {
-                Padding = 15,
-                BackgroundColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#00796B") : Color.FromArgb("#00695C"),
-                Spacing = 10
+                Padding = new Thickness(16, 12),
+                BackgroundColor = (Color)Application.Current!.Resources["MapBackground"],
+                Spacing = 12
             };
 
 
@@ -120,63 +123,86 @@ namespace CampusGuide.Views.Map
             // Search entry
             _searchEntry = new Entry
             {
-                Placeholder = "Search locations...",
-                BackgroundColor = Colors.White,
-                TextColor = Colors.Black,
-                PlaceholderColor = Colors.Gray,
-                Margin = new Thickness(0, 5, 0, 0)
+                Placeholder = "Search campus locations...",
+                BackgroundColor = Colors.Transparent,
+                TextColor = (Color)Application.Current!.Resources["MapTextPrimary"],
+                PlaceholderColor = (Color)Application.Current!.Resources["MapTextSecondary"],
+                VerticalOptions = LayoutOptions.Center,
+                HorizontalOptions = LayoutOptions.Fill
             };
             SemanticProperties.SetDescription(_searchEntry, "Search campus locations");
             _searchEntry.TextChanged += OnSearchTextChanged;
-            headerLayout.Add(_searchEntry);
+
+            var clearSearchButton = new Button
+            {
+                Text = "✕",
+                BackgroundColor = Colors.Transparent,
+                TextColor = (Color)Application.Current!.Resources["MapTextSecondary"],
+                FontSize = 14,
+                Padding = new Thickness(8, 0),
+                MinimumWidthRequest = 44,
+                MinimumHeightRequest = 44,
+                IsVisible = false
+            };
+            SemanticProperties.SetDescription(clearSearchButton, "Clear search");
+            clearSearchButton.Clicked += (s, e) => _searchEntry.Text = string.Empty;
+            _searchEntry.TextChanged += (s, e) => clearSearchButton.IsVisible = !string.IsNullOrEmpty(e.NewTextValue);
+
+            var searchGrid = new Grid
+            {
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition { Width = GridLength.Auto },
+                    new ColumnDefinition { Width = GridLength.Star },
+                    new ColumnDefinition { Width = GridLength.Auto }
+                },
+                ColumnSpacing = 8,
+                Padding = new Thickness(12, 0)
+            };
+            searchGrid.Add(new Label
+            {
+                Text = "🔎",
+                FontSize = 16,
+                VerticalOptions = LayoutOptions.Center,
+                InputTransparent = true
+            }, 0, 0);
+            searchGrid.Add(_searchEntry, 1, 0);
+            searchGrid.Add(clearSearchButton, 2, 0);
+
+            var searchCard = new Border
+            {
+                Content = searchGrid,
+                BackgroundColor = (Color)Application.Current!.Resources["MapCard"],
+                Stroke = (Color)Application.Current!.Resources["MapBorder"],
+                StrokeThickness = 1,
+                StrokeShape = new RoundRectangle { CornerRadius = 12 },
+                Padding = new Thickness(0),
+                MinimumHeightRequest = 48
+            };
+            headerLayout.Add(searchCard);
 
             // Filter buttons layout
-            var filterButtonsLayout = new VerticalStackLayout
+            var filterButtonsLayout = new FlexLayout
             {
-                Spacing = 8,
-                InputTransparent = false  // Allow buttons to receive input
+                Direction = FlexDirection.Row,
+                Wrap = FlexWrap.Wrap,
+                JustifyContent = FlexJustify.Start
             };
 
-            var row1 = new HorizontalStackLayout
+            foreach (var filterType in new[] { "All", "library", "cafeteria", "sports", "lab", "auditorium", "health" })
             {
-                Spacing = 8,
-                HorizontalOptions = LayoutOptions.Fill
-            };
-
-            var allButton = CreateFilterButton("All");
-            var libraryButton = CreateFilterButton("library");
-            var cafeteriaButton = CreateFilterButton("cafeteria");
-            var sportsButton = CreateFilterButton("sports");
-
-            row1.Add(allButton);
-            row1.Add(libraryButton);
-            row1.Add(cafeteriaButton);
-            row1.Add(sportsButton);
-
-            var row2 = new HorizontalStackLayout
-            {
-                Spacing = 8,
-                HorizontalOptions = LayoutOptions.Fill
-            };
-
-            var labButton = CreateFilterButton("lab");
-            var auditoriumButton = CreateFilterButton("auditorium");
-            var healthButton = CreateFilterButton("health");
-
-            row2.Add(labButton);
-            row2.Add(auditoriumButton);
-            row2.Add(healthButton);
-
-            filterButtonsLayout.Add(row1);
-            filterButtonsLayout.Add(row2);
+                var filterChip = CreateFilterButton(filterType);
+                filterChip.Margin = new Thickness(0, 0, 8, 8);
+                filterButtonsLayout.Add(filterChip);
+            }
 
             headerLayout.Add(new Label
             {
                 Text = "Filter by Type:",
-                FontSize = 12,
+                FontSize = 13,
                 FontAttributes = FontAttributes.Bold,
-                TextColor = Colors.White,
-                Margin = new Thickness(0, 5, 0, 0),
+                TextColor = (Color)Application.Current!.Resources["MapTextSecondary"],
+                Margin = new Thickness(0, 4, 0, 0),
                 InputTransparent = true  // Don't intercept touches
             });
             headerLayout.Add(filterButtonsLayout);
@@ -191,14 +217,14 @@ namespace CampusGuide.Views.Map
 
             var toggleDetailsButton = new Button
             {
-                Text = "Show building filter & legend ▼",
-                BackgroundColor = Colors.Transparent,
-                BorderColor = (Color)Application.Current!.Resources["HeaderText"],
+                Text = "Show building filter & legend ⌄",
+                BackgroundColor = (Color)Application.Current!.Resources["MapCard"],
+                BorderColor = (Color)Application.Current!.Resources["MapBorder"],
                 BorderWidth = 1,
-                TextColor = (Color)Application.Current!.Resources["HeaderText"],
-                FontSize = 12,
-                CornerRadius = 8,
-                Margin = new Thickness(0, 10, 0, 0),
+                TextColor = (Color)Application.Current!.Resources["MapTextPrimary"],
+                FontSize = 14,
+                CornerRadius = 12,
+                Margin = new Thickness(0, 4, 0, 0),
                 MinimumHeightRequest = 44
             };
             SemanticProperties.SetDescription(toggleDetailsButton, "Show or hide building filter and legend");
@@ -206,8 +232,8 @@ namespace CampusGuide.Views.Map
             {
                 detailsLayout.IsVisible = !detailsLayout.IsVisible;
                 toggleDetailsButton.Text = detailsLayout.IsVisible
-                    ? "Hide building filter & legend ▲"
-                    : "Show building filter & legend ▼";
+                    ? "Hide building filter & legend ⌃"
+                    : "Show building filter & legend ⌄";
             };
             headerLayout.Add(toggleDetailsButton);
 
@@ -216,7 +242,7 @@ namespace CampusGuide.Views.Map
                 Text = "Filter by Building:",
                 FontSize = 13,
                 FontAttributes = FontAttributes.Bold,
-                TextColor = (Color)Application.Current!.Resources["HeaderText"],
+                TextColor = (Color)Application.Current!.Resources["MapTextSecondary"],
                 InputTransparent = true  // Don't intercept touches
             });
 
@@ -251,16 +277,58 @@ namespace CampusGuide.Views.Map
             detailsLayout.Add(buildingScrollView);
             headerLayout.Add(detailsLayout);
 
-            // Pin color legend
-            var legendLabel = new Label
+            var legendTitle = new Label
             {
-                Text = "Pin categories: 🔵 Library • 🟠 Cafeteria • 🟢 Sports • 🟣 Lab • 🔴 Auditorium • 🌸 Health",
-                FontSize = 12,
-                TextColor = (Color)Application.Current!.Resources["HeaderText"],
-                Margin = new Thickness(0, 8, 0, 0),
-                InputTransparent = true  // Don't intercept touches
+                Text = "Pin categories",
+                FontSize = 13,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = (Color)Application.Current!.Resources["MapTextSecondary"],
+                Margin = new Thickness(0, 4, 0, 0),
+                InputTransparent = true
             };
-            detailsLayout.Add(legendLabel);
+            detailsLayout.Add(legendTitle);
+
+            var legendLayout = new FlexLayout
+            {
+                Direction = FlexDirection.Row,
+                Wrap = FlexWrap.Wrap,
+                JustifyContent = FlexJustify.Start
+            };
+
+            foreach (var (categoryName, categoryColorKey) in new[]
+            {
+                ("Library", "LibraryColor"),
+                ("Cafeteria", "CafeteriaColor"),
+                ("Sports", "SportsColor"),
+                ("Lab", "LabColor"),
+                ("Auditorium", "AuditoriumColor"),
+                ("Health", "HealthColor")
+            })
+            {
+                var legendItem = new HorizontalStackLayout
+                {
+                    Spacing = 6,
+                    Margin = new Thickness(0, 0, 14, 6),
+                    InputTransparent = true
+                };
+                legendItem.Add(new BoxView
+                {
+                    CornerRadius = 5,
+                    WidthRequest = 10,
+                    HeightRequest = 10,
+                    Color = (Color)Application.Current!.Resources[categoryColorKey],
+                    VerticalOptions = LayoutOptions.Center
+                });
+                legendItem.Add(new Label
+                {
+                    Text = categoryName,
+                    FontSize = 12,
+                    TextColor = (Color)Application.Current!.Resources["MapTextPrimary"],
+                    VerticalOptions = LayoutOptions.Center
+                });
+                legendLayout.Add(legendItem);
+            }
+            detailsLayout.Add(legendLayout);
 
             // Building legend
             if (_viewModel?.Buildings != null && _viewModel.Buildings.Count > 0)
@@ -268,8 +336,8 @@ namespace CampusGuide.Views.Map
                 var buildingLegendLabel = new Label
                 {
                     FontSize = 12,
-                    TextColor = (Color)Application.Current!.Resources["HeaderText"],
-                    Margin = new Thickness(0, 8, 0, 0),
+                    TextColor = (Color)Application.Current!.Resources["MapTextSecondary"],
+                    Margin = new Thickness(0, 4, 0, 0),
                     LineBreakMode = LineBreakMode.WordWrap,
                     InputTransparent = true  // Don't intercept touches
                 };
@@ -282,6 +350,20 @@ namespace CampusGuide.Views.Map
             }
 
             mainLayout.Add(headerLayout, 0, 0);
+
+            var selectionSummary = new Label
+            {
+                FontSize = 13,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = (Color)Application.Current!.Resources["MapTextPrimary"],
+                Text = _viewModel?.SelectedBuilding == null
+                    ? "Showing all buildings"
+                    : $"Showing {_viewModel.SelectedBuilding.Name} ({_viewModel.SelectedBuilding.LocationCount} locations)",
+                InputTransparent = true
+            };
+            SemanticProperties.SetDescription(selectionSummary, "Current map selection");
+            _selectionSummaryLabel = selectionSummary;
+            headerLayout.Add(selectionSummary);
 
             // Map view
             _map = new Microsoft.Maui.Controls.Maps.Map
@@ -304,68 +386,53 @@ namespace CampusGuide.Views.Map
             RefreshMapPins();
 
             // Map controls toolbar
-            var controlsLayout = new HorizontalStackLayout
+            var controlsLayout = new Grid
             {
-                Padding = 10,
-                Spacing = 10,
-                BackgroundColor = (Color)Application.Current!.Resources["Gray100"],
-                HorizontalOptions = LayoutOptions.Fill
+                Padding = new Thickness(12, 10),
+                ColumnSpacing = 8,
+                BackgroundColor = (Color)Application.Current!.Resources["MapCard"],
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition { Width = GridLength.Star },
+                    new ColumnDefinition { Width = new GridLength(56) },
+                    new ColumnDefinition { Width = new GridLength(56) },
+                    new ColumnDefinition { Width = GridLength.Star }
+                }
             };
 
-            var centerButton = new Button
+            Button CreateMapActionButton(string text, string description, bool isPrimary, EventHandler handler)
             {
-                Text = "🎯 Center",
-                BackgroundColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#00796B") : Color.FromArgb("#00695C"),
-                TextColor = Colors.White,
-                CornerRadius = 5,
-                Padding = 10,
-                HorizontalOptions = LayoutOptions.Fill,
-                FontSize = 12
-            };
-            SemanticProperties.SetDescription(centerButton, "Centers the map on campus");
-            centerButton.Clicked += OnCenterMapClicked;
-            controlsLayout.Add(centerButton);
+                var button = new Button
+                {
+                    Text = text,
+                    BackgroundColor = isPrimary ? (Color)Application.Current!.Resources["MapPrimary"] : (Color)Application.Current!.Resources["MapCard"],
+                    TextColor = isPrimary ? Colors.White : (Color)Application.Current!.Resources["MapTextPrimary"],
+                    BorderColor = isPrimary ? (Color)Application.Current!.Resources["MapPrimary"] : (Color)Application.Current!.Resources["MapBorder"],
+                    BorderWidth = 1,
+                    CornerRadius = 12,
+                    Padding = new Thickness(8, 0),
+                    FontSize = 14,
+                    FontAttributes = isPrimary ? FontAttributes.Bold : FontAttributes.None,
+                    MinimumHeightRequest = 44,
+                    MinimumWidthRequest = 44
+                };
+                SemanticProperties.SetDescription(button, description);
+                button.Clicked += handler;
+                return button;
+            }
 
-            var zoomInButton = new Button
-            {
-                Text = "🔍+",
-                BackgroundColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#00796B") : Color.FromArgb("#00695C"),
-                TextColor = Colors.White,
-                CornerRadius = 5,
-                Padding = 10,
-                FontSize = 12
-            };
-            SemanticProperties.SetDescription(zoomInButton, "Zoom in");
-            zoomInButton.Clicked += OnZoomInClicked;
-            controlsLayout.Add(zoomInButton);
+            var centerButton = CreateMapActionButton("\uD83C\uDFAF Center", "Centers the map on campus", true, OnCenterMapClicked);
+            var zoomInButton = CreateMapActionButton("+", "Zoom in", false, OnZoomInClicked);
+            var zoomOutButton = CreateMapActionButton("\u2212", "Zoom out", false, OnZoomOutClicked);
+            var floorPlansButton = CreateMapActionButton("\uD83D\uDCD0 Floor Plans", "Opens floor plans", true, OnFloorPlansClicked);
 
-            var zoomOutButton = new Button
-            {
-                Text = "🔍−",
-                BackgroundColor = Application.Current!.RequestedTheme == AppTheme.Dark ? Color.FromArgb("#00796B") : Color.FromArgb("#00695C"),
-                TextColor = Colors.White,
-                CornerRadius = 5,
-                Padding = 10,
-                FontSize = 12
-            };
-            SemanticProperties.SetDescription(zoomOutButton, "Zoom out");
-            zoomOutButton.Clicked += OnZoomOutClicked;
-            controlsLayout.Add(zoomOutButton);
-
-            var floorPlansButton = new Button
-            {
-                Text = "📐 Floor Plans",
-                BackgroundColor = Color.Parse("#512BD4"),
-                TextColor = Colors.White,
-                CornerRadius = 5,
-                Padding = 10,
-                FontSize = 12
-            };
-            SemanticProperties.SetDescription(floorPlansButton, "Opens floor plans");
-            floorPlansButton.Clicked += OnFloorPlansClicked;
-            controlsLayout.Add(floorPlansButton);
+            controlsLayout.Add(centerButton, 0, 0);
+            controlsLayout.Add(zoomInButton, 1, 0);
+            controlsLayout.Add(zoomOutButton, 2, 0);
+            controlsLayout.Add(floorPlansButton, 3, 0);
 
             mainLayout.Add(controlsLayout, 0, 2);
+
 
             // Info label
             var infoLabel = new Label
@@ -530,11 +597,15 @@ namespace CampusGuide.Views.Map
             var button = new Button
             {
                 Text = buttonText,
-                BackgroundColor = isSelected ? (Color)Application.Current!.Resources["Gray950"] : (Color)Application.Current!.Resources["Gray100"],
-                TextColor = isSelected ? Colors.White : (Color)Application.Current!.Resources["Gray950"],
-                FontSize = 11,
-                Padding = 10,
-                CornerRadius = 8,
+                BackgroundColor = isSelected ? (Color)Application.Current!.Resources["MapPrimary"] : (Color)Application.Current!.Resources["MapCard"],
+                TextColor = isSelected ? Colors.White : (Color)Application.Current!.Resources["MapTextPrimary"],
+                BorderColor = isSelected ? (Color)Application.Current!.Resources["MapPrimary"] : (Color)Application.Current!.Resources["MapBorder"],
+                BorderWidth = 1,
+                FontSize = 13,
+                FontAttributes = isSelected ? FontAttributes.Bold : FontAttributes.None,
+                Padding = new Thickness(14, 0),
+                CornerRadius = 12,
+                MinimumHeightRequest = 44,
                 HorizontalOptions = LayoutOptions.Start
             };
             SemanticProperties.SetDescription(button, building == null ? "Show all buildings" : $"Select building {building.Name}");
@@ -545,12 +616,26 @@ namespace CampusGuide.Views.Map
                 {
                     _viewModel.SelectBuildingCommand.Execute(building);
                     RefreshMapPins();
+                    UpdateSelectionSummary();
                     // Update all building buttons appearance
                     Debug.WriteLine($"Selected building: {(building == null ? "All Buildings" : building.Name)}");
                 }
             };
 
             return button;
+        }
+
+        private void UpdateSelectionSummary()
+        {
+            if (_selectionSummaryLabel == null)
+            {
+                return;
+            }
+
+            var building = _viewModel?.SelectedBuilding;
+            _selectionSummaryLabel.Text = building == null
+                ? "Showing all buildings"
+                : $"Showing {building.Name} ({building.LocationCount} locations)";
         }
 
         private void FilterLocations(string type)
@@ -935,6 +1020,12 @@ namespace CampusGuide.Views.Map
 
             if (location?.Coordinates == null)
                 return;
+
+            if (location.Coordinates.Latitude == 0 && location.Coordinates.Longitude == 0)
+            {
+                Debug.WriteLine($"Location '{location.Name}' has no valid coordinates; map not moved.");
+                return;
+            }
 
             var cluster = _viewModel.ClusterPins.FirstOrDefault(c => c.IsCluster && c.Pins.Any(p => p.LocationId == focusId));
             if (cluster != null && !cluster.IsExpanded)

@@ -1,126 +1,238 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="CampusGuide.Views.Map.FloorPlanPage"
-             Title="Floor Plan"
-             BackgroundColor="White">
+			 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+			 xmlns:conv="clr-namespace:CampusGuide.Converters"
+			 x:Class="CampusGuide.Views.Map.FloorPlanPage"
+			 Title="Floor Plan"
+			 BackgroundColor="{StaticResource MapBackground}">
 
-    <VerticalStackLayout Padding="0" Spacing="0">
+	<ContentPage.Resources>
+		<ResourceDictionary>
+			<conv:LocationTypeIconConverter x:Key="LocationTypeIcon" />
+		</ResourceDictionary>
+	</ContentPage.Resources>
 
-        <!-- Header -->
-        <VerticalStackLayout Padding="15" BackgroundColor="#512BD4" Spacing="10">
-            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
-                <Button x:Name="BackButton" Text="← Back" 
-                        SemanticProperties.Hint="Returns to the previous page"
-                        BackgroundColor="White" TextColor="Black"
-                        Padding="10" FontSize="12" CornerRadius="5"
-                        HorizontalOptions="Start"/>
-                <Label Text="Floor Plans" FontSize="20" FontAttributes="Bold" 
-                       TextColor="White" VerticalOptions="Center"/>
-            </HorizontalStackLayout>
+	<ScrollView>
+		<VerticalStackLayout Padding="16" Spacing="16">
 
-            <!-- Building and Floor Info -->
-            <VerticalStackLayout Spacing="5">
-                <Label x:Name="BuildingNameLabel" Text="Building: Academic Block A"
-                       FontSize="14" FontAttributes="Bold" TextColor="White"/>
-                <Label x:Name="FloorCountLabel" Text="Floors: 3"
-                       FontSize="12" TextColor="White"/>
-            </VerticalStackLayout>
+			<!-- Header -->
+			<Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" VerticalOptions="Center">
+				<Button x:Name="BackButton"
+						Grid.Column="0"
+						Text="←"
+						SemanticProperties.Description="Returns to the previous page"
+						SemanticProperties.Hint="Returns to the map"
+						BackgroundColor="{StaticResource MapCard}"
+						TextColor="{StaticResource MapPrimary}"
+						BorderColor="{StaticResource MapBorder}"
+						BorderWidth="1"
+						CornerRadius="12"
+						FontSize="18"
+						FontAttributes="Bold"
+						HeightRequest="44"
+						WidthRequest="44"
+						Padding="0"
+						HorizontalOptions="Start" />
+				<Label Grid.Column="1"
+					   Text="Floor Plans"
+					   FontSize="22"
+					   FontAttributes="Bold"
+					   TextColor="{StaticResource MapTextPrimary}"
+					   VerticalOptions="Center"
+					   SemanticProperties.HeadingLevel="Level1" />
+			</Grid>
 
-            <!-- Floor Selector -->
-            <Label Text="Select Floor:" FontSize="12" FontAttributes="Bold" 
-                   TextColor="White" Margin="0,5,0,0"/>
-            <HorizontalStackLayout x:Name="FloorSelectorLayout" Spacing="8" 
-                                   HorizontalOptions="Fill">
-                <!-- Floor buttons will be added programmatically -->
-            </HorizontalStackLayout>
-        </VerticalStackLayout>
+			<!-- Building Information Card -->
+			<Border BackgroundColor="{StaticResource MapCard}"
+					Stroke="{StaticResource MapBorder}"
+					StrokeThickness="1"
+					Padding="16"
+					StrokeShape="RoundRectangle 16">
+				<VerticalStackLayout Spacing="6">
+					<Label x:Name="BuildingNameLabel"
+						   Text="Building"
+						   FontSize="18"
+						   FontAttributes="Bold"
+						   TextColor="{StaticResource MapTextPrimary}" />
+					<Label x:Name="FloorCountLabel"
+						   Text="Floors: 0"
+						   FontSize="14"
+						   TextColor="{StaticResource MapTextSecondary}" />
+					<Label Text="Select floor"
+						   FontSize="13"
+						   FontAttributes="Bold"
+						   TextColor="{StaticResource MapTextSecondary}"
+						   Margin="0,8,0,0" />
+					<ScrollView Orientation="Horizontal"
+								HorizontalScrollBarVisibility="Never">
+						<HorizontalStackLayout x:Name="FloorSelectorLayout"
+											   Spacing="8"
+											   HorizontalOptions="Start" />
+					</ScrollView>
+				</VerticalStackLayout>
+			</Border>
 
-        <!-- Floor Plan Container -->
-        <Grid RowDefinitions="*" ColumnDefinitions="*" 
-              Padding="0" RowSpacing="0" ColumnSpacing="0"
-              VerticalOptions="Fill" HorizontalOptions="Fill">
+			<!-- Floor Plan Image Card -->
+			<Grid RowDefinitions="Auto"
+				  ColumnDefinitions="*"
+				  MinimumHeightRequest="240">
 
-            <!-- Scrollable Floor Plan Image -->
-            <ScrollView Grid.Row="0" Grid.Column="0"
-                       Padding="0" VerticalScrollBarVisibility="Never"
-                       HorizontalScrollBarVisibility="Never">
-                <Grid RowDefinitions="*" ColumnDefinitions="*">
-                    <Image x:Name="FloorPlanImage" 
-                           SemanticProperties.Description="Floor plan for the selected floor"
-                           Aspect="AspectFit"
-                           Grid.Row="0" Grid.Column="0"
-                           Margin="10"/>
+				<Border Grid.Row="0" Grid.Column="0"
+						BackgroundColor="{StaticResource MapCard}"
+						Stroke="{StaticResource MapBorder}"
+						StrokeThickness="1"
+						Padding="8"
+						StrokeShape="RoundRectangle 16">
+					<ScrollView VerticalScrollBarVisibility="Never"
+								HorizontalScrollBarVisibility="Never">
+						<Grid RowDefinitions="*" ColumnDefinitions="*">
+							<Image x:Name="FloorPlanImage"
+								   SemanticProperties.Description="Floor plan for the selected floor"
+								   Aspect="AspectFit"
+								   Grid.Row="0" Grid.Column="0"
+								   Margin="4" />
+							<GraphicsView x:Name="PinOverlay"
+										  Grid.Row="0" Grid.Column="0"
+										  Margin="4" />
+						</Grid>
+					</ScrollView>
+				</Border>
 
-                    <!-- Overlay Canvas for Location Pins -->
-                    <GraphicsView x:Name="PinOverlay"
-                                 Grid.Row="0" Grid.Column="0"
-                                 Margin="10"/>
-                </Grid>
-            </ScrollView>
+				<!-- Loading -->
+				<VerticalStackLayout x:Name="LoadingContainer"
+									 Grid.Row="0" Grid.Column="0"
+									 Padding="24" Spacing="12"
+									 VerticalOptions="Center"
+									 HorizontalOptions="Center">
+					<ActivityIndicator IsRunning="True"
+									   Color="{StaticResource MapPrimary}"
+									   SemanticProperties.Description="Loading floor plan"
+									   HorizontalOptions="Center" />
+					<Label Text="Loading floor plan..."
+						   FontSize="14"
+						   TextColor="{StaticResource MapTextSecondary}"
+						   HorizontalOptions="Center" />
+				</VerticalStackLayout>
 
-            <!-- Loading Indicator -->
-            <VerticalStackLayout Grid.Row="0" Grid.Column="0"
-                                x:Name="LoadingContainer"
-                                Padding="20" Spacing="10"
-                                VerticalOptions="Center"
-                                HorizontalOptions="Center">
-                <Label Text="Loading floor plan..." 
-                       FontSize="16" HorizontalOptions="Center"/>
-                <ActivityIndicator IsRunning="True" Color="#512BD4"
-                                  SemanticProperties.Description="Loading floor plan"
-                                  HorizontalOptions="Center"/>
-            </VerticalStackLayout>
+				<!-- Unavailable empty state -->
+				<Border x:Name="UnavailableContainer"
+						Grid.Row="0" Grid.Column="0"
+						BackgroundColor="{StaticResource MapCard}"
+						Stroke="{StaticResource MapBorder}"
+						StrokeThickness="1"
+						Padding="24"
+						StrokeShape="RoundRectangle 16"
+						VerticalOptions="Center"
+						HorizontalOptions="Fill">
+					<VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+						<Border BackgroundColor="{StaticResource MapPrimaryLight}"
+								Stroke="Transparent"
+								StrokeShape="RoundRectangle 36"
+								WidthRequest="72"
+								HeightRequest="72"
+								HorizontalOptions="Center">
+							<Label Text="🗺️"
+								   FontSize="32"
+								   HorizontalOptions="Center"
+								   VerticalOptions="Center" />
+						</Border>
+						<Label x:Name="UnavailableTitleLabel"
+							   Text="Floor plan not available yet"
+							   FontSize="18"
+							   FontAttributes="Bold"
+							   TextColor="{StaticResource MapTextPrimary}"
+							   HorizontalOptions="Center"
+							   HorizontalTextAlignment="Center" />
+						<Label x:Name="UnavailableMessageLabel"
+							   Text="The floor plan image for this floor has not been uploaded yet. Please check back later."
+							   FontSize="14"
+							   TextColor="{StaticResource MapTextSecondary}"
+							   HorizontalOptions="Center"
+							   HorizontalTextAlignment="Center" />
+						<Label Text="{Binding ErrorMessage}"
+							   IsVisible="{Binding HasError}"
+							   FontSize="13"
+							   TextColor="{StaticResource Error}"
+							   HorizontalOptions="Center"
+							   HorizontalTextAlignment="Center" />
+					</VerticalStackLayout>
+				</Border>
+			</Grid>
 
-            <!-- Unavailable Floor Plan Message -->
-            <VerticalStackLayout Grid.Row="0" Grid.Column="0"
-                                x:Name="UnavailableContainer"
-                                Padding="20" Spacing="15"
-                                VerticalOptions="Center"
-                                HorizontalOptions="Center">
-                <Label Text="⚠️ Floor Plan Unavailable"
-                       FontSize="18" FontAttributes="Bold"
-                       HorizontalOptions="Center" TextColor="#FF6B6B"/>
-                <Label Text="The floor plan image for this floor is not available yet."
-                       FontSize="14" HorizontalOptions="Center"
-                       HorizontalTextAlignment="Center"/>
-                <Label Text="{Binding ErrorMessage}"
-                       IsVisible="{Binding HasError}"
-                       FontSize="14" TextColor="#FF6B6B"
-                       HorizontalOptions="Center"
-                       HorizontalTextAlignment="Center"/>
-                <Label x:Name="LocationListLabel" Text="Locations on this floor:"
-                       FontSize="12" FontAttributes="Bold"
-                       HorizontalOptions="Center" Margin="0,20,0,0"/>
-                <CollectionView x:Name="LocationsCollectionView"
-                               SelectionMode="Single"
-                               SemanticProperties.Description="List of locations on this floor"
-                               Margin="0,10,0,0">
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="10"/>
-                    </CollectionView.ItemsLayout>
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Frame Padding="10" CornerRadius="8" HasShadow="True">
-                                <VerticalStackLayout Spacing="5">
-                                    <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold"/>
-                                    <Label Text="{Binding Type}" FontSize="12" TextColor="Gray"/>
-                                </VerticalStackLayout>
-                            </Frame>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </VerticalStackLayout>
-        </Grid>
+			<!-- Locations on this floor -->
+			<Label x:Name="LocationListLabel"
+				   Text="Locations on this floor"
+				   FontSize="16"
+				   FontAttributes="Bold"
+				   TextColor="{StaticResource MapTextPrimary}" />
 
-        <!-- Floor Info Footer -->
-        <VerticalStackLayout Padding="15" BackgroundColor="#F5F5F5" Spacing="5">
-            <Label x:Name="FloorInfoLabel" Text="Ground Floor - 2 locations"
-                   FontSize="12" TextColor="#333333"/>
-            <Label x:Name="LocationCountLabel" Text="Locations: 2"
-                   FontSize="11" TextColor="#666666"/>
-        </VerticalStackLayout>
+			<CollectionView x:Name="LocationsCollectionView"
+							SelectionMode="Single"
+							SemanticProperties.Description="List of locations on this floor">
+				<CollectionView.ItemsLayout>
+					<LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+				</CollectionView.ItemsLayout>
+				<CollectionView.ItemTemplate>
+					<DataTemplate>
+						<Border BackgroundColor="{StaticResource MapCard}"
+								Stroke="{StaticResource MapBorder}"
+								StrokeThickness="1"
+								Padding="14"
+								Margin="0,0,0,2"
+								StrokeShape="RoundRectangle 12">
+							<Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+								<Border Grid.Column="0"
+										BackgroundColor="{StaticResource MapPrimaryLight}"
+										Stroke="Transparent"
+										StrokeShape="RoundRectangle 10"
+										WidthRequest="44"
+										HeightRequest="44"
+										VerticalOptions="Center">
+									<Label Text="{Binding Type, Converter={StaticResource LocationTypeIcon}}"
+										   FontSize="20"
+										   HorizontalOptions="Center"
+										   VerticalOptions="Center" />
+								</Border>
+								<VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+									<Label Text="{Binding Name}"
+										   FontSize="16"
+										   FontAttributes="Bold"
+										   TextColor="{StaticResource MapTextPrimary}" />
+									<Label Text="{Binding Type}"
+										   FontSize="13"
+										   TextColor="{StaticResource MapTextSecondary}" />
+								</VerticalStackLayout>
+								<Label Grid.Column="2"
+									   Text="›"
+									   FontSize="22"
+									   TextColor="{StaticResource MapTextSecondary}"
+									   VerticalOptions="Center" />
+							</Grid>
+						</Border>
+					</DataTemplate>
+				</CollectionView.ItemTemplate>
+			</CollectionView>
 
-    </VerticalStackLayout>
+			<!-- Floor Summary -->
+			<Border BackgroundColor="{StaticResource MapPrimaryLight}"
+					Stroke="{StaticResource MapBorder}"
+					StrokeThickness="1"
+					Padding="14"
+					StrokeShape="RoundRectangle 12">
+				<VerticalStackLayout Spacing="4">
+					<Label x:Name="FloorInfoLabel"
+						   Text="Floor summary"
+						   FontSize="14"
+						   FontAttributes="Bold"
+						   TextColor="{StaticResource MapTextPrimary}" />
+					<Label x:Name="LocationCountLabel"
+						   Text="Locations: 0"
+						   FontSize="13"
+						   TextColor="{StaticResource MapTextSecondary}" />
+				</VerticalStackLayout>
+			</Border>
+
+		</VerticalStackLayout>
+	</ScrollView>
 
 </ContentPage>

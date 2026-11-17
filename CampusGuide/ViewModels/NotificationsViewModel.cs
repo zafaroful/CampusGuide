@@ -63,7 +63,7 @@ namespace CampusGuide.ViewModels
 
                 MainThread.BeginInvokeOnMainThread(() =>
                         {
-                            notifications.Clear();
+                            Notifications.Clear();
 
                             // If no notifications from Firestore, load test data
                             if (notificationsList == null || notificationsList.Count == 0)
@@ -81,13 +81,13 @@ namespace CampusGuide.ViewModels
 
                             foreach (var notification in sortedNotifications)
                             {
-                                notifications.Add(notification);
+                                Notifications.Add(notification);
                             }
 
-                            HasNotifications = notifications.Count > 0;
+                            HasNotifications = Notifications.Count > 0;
                             ApplyFilter();
 
-                            System.Diagnostics.Debug.WriteLine($"NotificationsViewModel: Loaded {notifications.Count} notifications");
+                            System.Diagnostics.Debug.WriteLine($"NotificationsViewModel: Loaded {Notifications.Count} notifications");
 
                     // Check for alerts and display them
                     var alerts = sortedNotifications.Where(n => n.Type?.Equals("Alert", StringComparison.OrdinalIgnoreCase) ?? false).ToList();
@@ -202,8 +202,8 @@ namespace CampusGuide.ViewModels
                 FilteredNotifications.Clear();
 
                 var filtered = string.IsNullOrEmpty(_currentFilter)
-                    ? notifications
-                    : notifications.Where(n => n.Type?.Equals(_currentFilter, StringComparison.OrdinalIgnoreCase) ?? false);
+                    ? Notifications
+                    : Notifications.Where(n => n.Type?.Equals(_currentFilter, StringComparison.OrdinalIgnoreCase) ?? false);
 
                 foreach (var notification in filtered)
                 {
@@ -219,7 +219,7 @@ namespace CampusGuide.ViewModels
         public ObservableCollection<NotificationItem> GetNotificationsByType(string notificationType)
         {
             var filtered = new ObservableCollection<NotificationItem>(
-                notifications.Where(n => n.Type?.Equals(notificationType, StringComparison.OrdinalIgnoreCase) ?? false)
+                Notifications.Where(n => n.Type?.Equals(notificationType, StringComparison.OrdinalIgnoreCase) ?? false)
             );
             return filtered;
         }
@@ -230,7 +230,7 @@ namespace CampusGuide.ViewModels
         public ObservableCollection<NotificationItem> GetNotificationsForEvent(string eventId)
         {
             var filtered = new ObservableCollection<NotificationItem>(
-                notifications.Where(n => n.RelatedEventId == eventId)
+                Notifications.Where(n => n.RelatedEventId == eventId)
             );
             return filtered;
         }
@@ -241,7 +241,7 @@ namespace CampusGuide.ViewModels
         public ObservableCollection<NotificationItem> GetNotificationsForLocation(string locationId)
         {
             var filtered = new ObservableCollection<NotificationItem>(
-                notifications.Where(n => n.RelatedLocationId == locationId)
+                Notifications.Where(n => n.RelatedLocationId == locationId)
             );
             return filtered;
         }

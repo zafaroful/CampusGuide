@@ -1,6 +1,11 @@
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Shapes;
 using CampusGuide.Services;
 using CampusGuide.Models;
+using SkiaSharp;
+using ZXing;
+using ZXing.Common;
+using ZXing.SkiaSharp;
 
 namespace CampusGuide.Views.Home
 {
@@ -9,6 +14,13 @@ namespace CampusGuide.Views.Home
         private readonly IFirestoreService? _firestoreService;
         private readonly IQRCodeScannerService? _qrScannerService;
         private bool _isProcessing = false;
+        private Label? _statusLabel;
+        private Label? _progressLabel;
+        private Label? _scannedLabel;
+        private Label? _errorLabel;
+        private Label? _previewIconLabel;
+        private Label? _previewTitleLabel;
+        private Label? _previewCaptionLabel;
 
         public QRScannerPage()
         {
@@ -17,9 +29,15 @@ namespace CampusGuide.Views.Home
 
             Title = "Scan QR Code";
 
+            Shell.SetBackgroundColor(this, Token("MapCard"));
+            Shell.SetForegroundColor(this, Token("MapPrimary"));
+            Shell.SetTitleColor(this, Token("MapTextPrimary"));
+
             // Build UI in code-only since XAML control integration has issues
             BuildUI();
         }
+
+        private static Color Token(string key) => (Color)Application.Current!.Resources[key];
 
         private void BuildUI()
         {
@@ -28,180 +46,268 @@ namespace CampusGuide.Views.Home
             {
                 RowDefinitions = new RowDefinitionCollection
                 {
-                    new RowDefinition(GridLength.Auto),    // Header
-                    new RowDefinition(GridLength.Star),    // Content area
-                    new RowDefinition(GridLength.Auto),    // Status/instructions
+                    new RowDefinition(GridLength.Auto),    // Instruction banner
+                    new RowDefinition(GridLength.Star),    // Camera preview
+                    new RowDefinition(GridLength.Auto),    // Status
                     new RowDefinition(GridLength.Auto),    // Bottom controls
                 },
-                Padding = 0,
-                RowSpacing = 0,
-                BackgroundColor = Colors.Black,
-                ColumnSpacing = 0
+                Padding = new Thickness(16, 12),
+                RowSpacing = 12,
+                BackgroundColor = Token("MapBackground")
             };
 
-            // Header with title
-            var headerFrame = new Frame
-            {
-                BackgroundColor = Color.FromArgb("#2C3E50"),
-                BorderColor = Colors.Transparent,
-                Padding = 15,
-                CornerRadius = 0,
-                HasShadow = false
-            };
-
-            var headerLabel = new Label
+            var instructionLabel = new Label
             {
                 Text = "Point camera at QR code",
+                FontSize = 16,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Token("MapPrimary"),
+                VerticalOptions = LayoutOptions.Center
+            };
+            SemanticProperties.SetHeadingLevel(instructionLabel, SemanticHeadingLevel.Level1);
+
+            var instructionBorder = new Border
+            {
+                BackgroundColor = Token("MapPrimaryLight"),
+                Stroke = Colors.Transparent,
+                StrokeShape = new RoundRectangle { CornerRadius = 12 },
+                Padding = new Thickness(16, 14),
+                Content = new HorizontalStackLayout
+                {
+                    Spacing = 12,
+                    HorizontalOptions = LayoutOptions.Center,
+                    Children =
+                    {
+                        new Label
+                        {
+                            Text = "🔳",
+                            FontSize = 22,
+                            VerticalOptions = LayoutOptions.Center
+                        },
+                        instructionLabel
+                    }
+                }
+            };
+            Grid.SetRow(instructionBorder, 0);
+            mainGrid.Add(instructionBorder);
+
+            _previewIconLabel = new Label
+            {
+                Text = "📷",
+                FontSize = 56,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center
+            };
+
+            var scanFrame = new Border
+            {
+                WidthRequest = 200,
+                HeightRequest = 200,
+                BackgroundColor = Colors.Transparent,
+                Stroke = Token("AccentDark"),
+                StrokeThickness = 3,
+                StrokeShape = new RoundRectangle { CornerRadius = 16 },
+                HorizontalOptions = LayoutOptions.Center,
+                Content = _previewIconLabel
+            };
+
+            _previewTitleLabel = new Label
+            {
+                Text = "Camera Preview",
                 FontSize = 18,
                 FontAttributes = FontAttributes.Bold,
                 TextColor = Colors.White,
                 HorizontalOptions = LayoutOptions.Center
             };
-            headerFrame.Content = headerLabel;
-            Grid.SetRow(headerFrame, 0);
-            Grid.SetColumn(headerFrame, 0);
-            mainGrid.Add(headerFrame);
 
-            // Camera placeholder area with better visual feedback
-            var cameraPlaceholder = new VerticalStackLayout
+            _previewCaptionLabel = new Label
             {
-                Spacing = 20,
-                Padding = 20,
-                VerticalOptions = LayoutOptions.FillAndExpand,
-                HorizontalOptions = LayoutOptions.FillAndExpand,
-                Children =
-                {
-                    new Label
-                    {
-                        Text = "📷",
-                        FontSize = 80,
-                        HorizontalOptions = LayoutOptions.Center,
-                        VerticalOptions = LayoutOptions.CenterAndExpand
-                    },
-                    new Label
-                    {
-                        Text = "Camera Preview",
-                        FontSize = 20,
-                        FontAttributes = FontAttributes.Bold,
-                        TextColor = Colors.White,
-                        HorizontalOptions = LayoutOptions.Center
-                    },
-                    new Label
-                    {
-                        Text = "Use the Test Scan button below to simulate scanning a QR code.\n\nQR Format: campus://location/LOCATION_ID",
-                        FontSize = 13,
-                        TextColor = Color.FromArgb("#AAAAAA"),
-                        HorizontalOptions = LayoutOptions.Center,
-                        HorizontalTextAlignment = TextAlignment.Center
-                    }
-                }
-            };
-            Grid.SetRow(cameraPlaceholder, 1);
-            Grid.SetColumn(cameraPlaceholder, 0);
-            mainGrid.Add(cameraPlaceholder);
-
-            // Status/instructions area with enhanced visual feedback
-            var statusStack = new VerticalStackLayout
-            {
-                Padding = new Thickness(15, 10),
-                Spacing = 8,
-                BackgroundColor = Color.FromArgb("#1C2833")
-            };
-
-            var statusLabel = new Label
-            {
-                Text = "Ready to scan QR codes",
+                Text = "Simulated preview. Use Test Scan to simulate scanning a QR code.",
                 FontSize = 13,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Color.FromArgb("#3498DB"),
+                TextColor = Token("TextSecondaryDark"),
+                HorizontalOptions = LayoutOptions.Center,
                 HorizontalTextAlignment = TextAlignment.Center
             };
-            statusStack.Add(statusLabel);
 
-            // Progress indicator
-            var progressIndicator = new Label
+            var formatLabel = new Label
             {
-                Text = "",
-                FontSize = 11,
-                TextColor = Color.FromArgb("#F39C12"),
+                Text = "QR format: campus://location/LOCATION_ID",
+                FontSize = 12,
+                TextColor = Token("TextSecondaryDark"),
+                HorizontalOptions = LayoutOptions.Center,
+                HorizontalTextAlignment = TextAlignment.Center
+            };
+
+            var previewBorder = new Border
+            {
+                BackgroundColor = Token("SurfaceDark"),
+                Stroke = Colors.Transparent,
+                StrokeShape = new RoundRectangle { CornerRadius = 16 },
+                Content = new VerticalStackLayout
+                {
+                    Spacing = 16,
+                    Padding = new Thickness(20),
+                    VerticalOptions = LayoutOptions.Center,
+                    Children = { scanFrame, _previewTitleLabel, _previewCaptionLabel, formatLabel }
+                }
+            };
+            Grid.SetRow(previewBorder, 1);
+            mainGrid.Add(previewBorder);
+
+            _statusLabel = new Label
+            {
+                Text = "Ready to scan QR codes",
+                FontSize = 15,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Token("MapPrimary"),
+                HorizontalTextAlignment = TextAlignment.Center
+            };
+
+            _progressLabel = new Label
+            {
+                Text = "⏳ Please wait...",
+                FontSize = 12,
+                TextColor = Token("Warning"),
                 HorizontalTextAlignment = TextAlignment.Center,
                 IsVisible = false
             };
-            statusStack.Add(progressIndicator);
 
-            var scannedValueLabel = new Label
+            _scannedLabel = new Label
+            {
+                Text = "",
+                FontSize = 13,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Token("Success"),
+                HorizontalTextAlignment = TextAlignment.Center,
+                IsVisible = false
+            };
+
+            _errorLabel = new Label
             {
                 Text = "",
                 FontSize = 12,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Color.FromArgb("#2ECC71"),
+                TextColor = Token("Error"),
                 HorizontalTextAlignment = TextAlignment.Center,
                 IsVisible = false
             };
-            statusStack.Add(scannedValueLabel);
 
-            // Error message label
-            var errorLabel = new Label
+            var statusStack = new VerticalStackLayout
             {
-                Text = "",
-                FontSize = 11,
-                TextColor = Color.FromArgb("#E74C3C"),
-                HorizontalTextAlignment = TextAlignment.Center,
-                IsVisible = false
-            };
-            statusStack.Add(errorLabel);
-
-            Grid.SetRow(statusStack, 2);
-            Grid.SetColumn(statusStack, 0);
-            mainGrid.Add(statusStack);
-
-            // Bottom controls
-            var bottomFrame = new Frame
-            {
-                BackgroundColor = Color.FromArgb("#2C3E50"),
-                BorderColor = Colors.Transparent,
-                Padding = 10,
-                CornerRadius = 0,
-                HasShadow = false
+                Spacing = 6,
+                Children = { _statusLabel, _progressLabel, _scannedLabel, _errorLabel }
             };
 
-            var buttonLayout = new HorizontalStackLayout
+            var statusBorder = new Border
             {
-                Spacing = 10,
-                Padding = 10
+                BackgroundColor = Token("MapCard"),
+                Stroke = Token("MapBorder"),
+                StrokeShape = new RoundRectangle { CornerRadius = 12 },
+                Padding = new Thickness(16, 12),
+                Content = statusStack
             };
+            Grid.SetRow(statusBorder, 2);
+            mainGrid.Add(statusBorder);
 
-            var testButton = new Button
-            {
-                Text = "Test Scan",
-                BackgroundColor = Color.FromArgb("#3498DB"),
-                TextColor = Colors.White,
-                Padding = new Thickness(15, 10),
-                HorizontalOptions = LayoutOptions.FillAndExpand
-            };
-            SemanticProperties.SetDescription(testButton, "Simulates a QR code scan for testing");
+            var testButton = CreateActionButton("🔍  Test Scan", "Simulates a QR code scan for testing",
+                Token("MapPrimary"), Colors.White, Token("MapPrimary"), Color.FromArgb("#066B5F"));
             testButton.Clicked += OnTestScanClicked;
 
-            var cancelButton = new Button
-            {
-                Text = "Cancel",
-                BackgroundColor = Color.FromArgb("#E74C3C"),
-                TextColor = Colors.White,
-                Padding = new Thickness(15, 10),
-                HorizontalOptions = LayoutOptions.FillAndExpand
-            };
-            SemanticProperties.SetDescription(cancelButton, "Cancels scanning and returns");
+            var galleryButton = CreateActionButton("🖼  Scan from Gallery", "Selects a QR code image from the gallery and opens its location on the map",
+                Token("MapCard"), Token("MapPrimary"), Token("MapBorder"), Token("MapPrimaryLight"));
+            galleryButton.Clicked += OnGalleryScanClicked;
+
+            var cancelButton = CreateActionButton("✕  Cancel", "Cancels scanning and returns",
+                Token("MapCard"), Token("MapTextPrimary"), Token("MapBorder"), Token("MapDisabled"));
             cancelButton.Clicked += OnCancelClicked;
 
-            buttonLayout.Add(testButton);
-            buttonLayout.Add(cancelButton);
+            var actionGrid = new Grid
+            {
+                RowDefinitions = new RowDefinitionCollection
+                {
+                    new RowDefinition(GridLength.Auto),
+                    new RowDefinition(GridLength.Auto)
+                },
+                ColumnDefinitions = new ColumnDefinitionCollection
+                {
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Star)
+                },
+                RowSpacing = 10,
+                ColumnSpacing = 10
+            };
 
-            bottomFrame.Content = buttonLayout;
-            Grid.SetRow(bottomFrame, 3);
-            Grid.SetColumn(bottomFrame, 0);
-            mainGrid.Add(bottomFrame);
+            Grid.SetRow(testButton, 0);
+            Grid.SetColumnSpan(testButton, 2);
+            actionGrid.Add(testButton);
+
+            Grid.SetRow(galleryButton, 1);
+            Grid.SetColumn(galleryButton, 0);
+            actionGrid.Add(galleryButton);
+
+            Grid.SetRow(cancelButton, 1);
+            Grid.SetColumn(cancelButton, 1);
+            actionGrid.Add(cancelButton);
+
+            Grid.SetRow(actionGrid, 3);
+            mainGrid.Add(actionGrid);
 
             Content = mainGrid;
+        }
+
+        private static Button CreateActionButton(string text, string description, Color background, Color textColor, Color border, Color pressedColor)
+        {
+            var button = new Button
+            {
+                Text = text,
+                BackgroundColor = background,
+                TextColor = textColor,
+                BorderColor = border,
+                BorderWidth = 1,
+                CornerRadius = 12,
+                FontSize = 14,
+                FontAttributes = FontAttributes.Bold,
+                HeightRequest = 48,
+                MinimumHeightRequest = 48,
+                Padding = new Thickness(12, 0),
+                HorizontalOptions = LayoutOptions.Fill
+            };
+            SemanticProperties.SetDescription(button, description);
+
+            var states = new VisualStateGroup { Name = "CommonStates" };
+            states.States.Add(new VisualState
+            {
+                Name = "Normal",
+                Setters =
+                {
+                    new Setter { Property = Button.BackgroundColorProperty, Value = background },
+                    new Setter { Property = Button.TextColorProperty, Value = textColor }
+                }
+            });
+            states.States.Add(new VisualState
+            {
+                Name = "Pressed",
+                Setters =
+                {
+                    new Setter { Property = Button.BackgroundColorProperty, Value = pressedColor },
+                    new Setter { Property = Button.TextColorProperty, Value = textColor }
+                }
+            });
+            states.States.Add(new VisualState
+            {
+                Name = "Disabled",
+                Setters =
+                {
+                    new Setter { Property = Button.BackgroundColorProperty, Value = Token("MapDisabled") },
+                    new Setter { Property = Button.TextColorProperty, Value = Token("MapTextSecondary") },
+                    new Setter { Property = Button.BorderColorProperty, Value = Token("MapBorder") }
+                }
+            });
+
+            var groups = new VisualStateGroupList();
+            groups.Add(states);
+            VisualStateManager.SetVisualStateGroups(button, groups);
+
+            return button;
         }
 
         protected override async void OnAppearing()
@@ -267,7 +373,7 @@ namespace CampusGuide.Views.Home
                     try
                     {
                         // Update UI with detected value
-                        UpdateUI("QR code detected!", testQRValue, true);
+                        UpdateUI("QR code detected successfully!", testQRValue, true);
 
                         // Brief delay to show detected value
                         await Task.Delay(500).ConfigureAwait(false);
@@ -299,6 +405,104 @@ namespace CampusGuide.Views.Home
                 System.Diagnostics.Debug.WriteLine($"QRScannerPage: Test scan exception: {ex.Message}");
                 await DisplayAlert("Error", $"Test scan failed: {ex.Message}", "OK");
             }
+        }
+
+        private async void OnGalleryScanClicked(object? sender, EventArgs e)
+        {
+            if (_isProcessing)
+            {
+                await DisplayAlert("Processing", "Please wait while the previous scan is being processed.", "OK");
+                return;
+            }
+
+            _isProcessing = true;
+
+            try
+            {
+                var photo = await FilePicker.Default.PickAsync(new PickOptions
+                {
+                    PickerTitle = "Select a QR code image",
+                    FileTypes = FilePickerFileType.Images
+                });
+                if (photo == null)
+                {
+                    return;
+                }
+
+                UpdateUI("Reading image...", "", false);
+
+                string? qrValue;
+                using (var stream = await photo.OpenReadAsync())
+                {
+                    qrValue = DecodeQRCodeFromImage(stream);
+                }
+
+                if (string.IsNullOrEmpty(qrValue))
+                {
+                    UpdateUI("No QR code found", "", false);
+                    await DisplayAlert("No QR Code", "No QR code was found in the selected image.", "OK");
+                    UpdateUI("Ready to scan QR codes", "", false);
+                    return;
+                }
+
+                var locationId = ExtractLocationIdFromQRCode(qrValue);
+                if (string.IsNullOrEmpty(locationId))
+                {
+                    UpdateUI("Invalid QR code", "Could not extract location ID", false);
+                    await DisplayAlert("Invalid QR Code", "Could not extract location ID from QR code.\n\nFormat should be: campus://location/LOCATION_ID", "OK");
+                    UpdateUI("Ready to scan QR codes", "", false);
+                    return;
+                }
+
+                UpdateUI("Fetching location data...", "", false);
+
+                var location = _firestoreService != null
+                    ? await _firestoreService.GetLocationByIdAsync(locationId)
+                    : null;
+
+                if (location == null)
+                {
+                    UpdateUI("Location not found", locationId, false);
+                    await DisplayAlert("Location Not Found", $"No location found for QR code: {locationId}", "OK");
+                    UpdateUI("Ready to scan QR codes", "", false);
+                    return;
+                }
+
+                UpdateUI("Opening map...", "", false);
+                await Shell.Current.GoToAsync($"//map?focusId={Uri.EscapeDataString(locationId)}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"QRScannerPage: Gallery scan error: {ex.Message}");
+                UpdateUI("Error processing image", ex.Message, false);
+                await DisplayAlert("Error", $"Failed to scan image: {ex.Message}", "OK");
+                UpdateUI("Ready to scan QR codes", "", false);
+            }
+            finally
+            {
+                _isProcessing = false;
+            }
+        }
+
+        private static string? DecodeQRCodeFromImage(Stream stream)
+        {
+            using var bitmap = SKBitmap.Decode(stream);
+            if (bitmap == null)
+            {
+                return null;
+            }
+
+            var reader = new BarcodeReader
+            {
+                AutoRotate = true,
+                Options = new DecodingOptions
+                {
+                    PossibleFormats = new List<BarcodeFormat> { BarcodeFormat.QR_CODE },
+                    TryHarder = true
+                }
+            };
+
+            return reader.Decode(bitmap)?.Text;
         }
 
         private async Task ProcessScannedQRCodeAsync(string scannedValue)
@@ -434,96 +638,50 @@ namespace CampusGuide.Views.Home
             return qrValue;
         }
 
-        private void UpdateUI(string statusText, string scannedText, bool showScanned)
-        {
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                try
-                {
-                    var mainGrid = (Grid)Content;
-                    if (mainGrid == null)
-                        return;
+		private void UpdateUI(string statusText, string scannedText, bool showScanned)
+		{
+			MainThread.BeginInvokeOnMainThread(() =>
+			{
+				try
+				{
+					if (_statusLabel == null || _progressLabel == null || _scannedLabel == null || _errorLabel == null)
+						return;
 
-                    // Find the status stack layout (row 2)
-                    foreach (var child in mainGrid.Children)
-                    {
-                        var childRow = mainGrid.GetRow(child);
-                        if (childRow == 2 && child is VerticalStackLayout statusStack)
-                        {
-                            // Update status label
-                            if (statusStack.Children.Count > 0 && statusStack.Children[0] is Label statusLabel)
-                            {
-                                statusLabel.Text = statusText;
-                                // Change color based on status
-                                if (statusText.Contains("Error") || statusText.Contains("Failed"))
-                                {
-                                    statusLabel.TextColor = Color.FromArgb("#E74C3C");
-                                }
-                                else if (statusText.Contains("Processing") || statusText.Contains("Fetching") || statusText.Contains("Opening"))
-                                {
-                                    statusLabel.TextColor = Color.FromArgb("#F39C12");
-                                }
-                                else if (statusText.Contains("detected"))
-                                {
-                                    statusLabel.TextColor = Color.FromArgb("#2ECC71");
-                                }
-                                else
-                                {
-                                    statusLabel.TextColor = Color.FromArgb("#3498DB");
-                                }
-                            }
+					var isError = statusText.Contains("Error") || statusText.Contains("Failed") || statusText.Contains("Invalid") || statusText.Contains("not found") || statusText.Contains("No QR");
+					var isSuccess = statusText.Contains("detected successfully");
+					var isPermission = statusText.Contains("permission");
+					var isBusy = statusText.Contains("Processing") || statusText.Contains("Fetching") || statusText.Contains("Opening") || statusText.Contains("Reading") || statusText.Contains("Simulating") || statusText.Contains("Scanning");
 
-                            // Update progress indicator label
-                            if (statusStack.Children.Count > 1 && statusStack.Children[1] is Label progressLabel)
-                            {
-                                if (statusText.Contains("Processing") || statusText.Contains("Fetching") || statusText.Contains("Opening"))
-                                {
-                                    progressLabel.Text = "⏳ Please wait...";
-                                    progressLabel.IsVisible = true;
-                                }
-                                else
-                                {
-                                    progressLabel.IsVisible = false;
-                                }
-                            }
+					_statusLabel.Text = statusText;
+					_statusLabel.TextColor = isError
+						? Token("Error")
+						: isSuccess
+							? Token("Success")
+							: isPermission
+								? Token("Warning")
+								: Token("MapPrimary");
 
-                            // Update scanned value label if it exists
-                            if (statusStack.Children.Count > 2 && statusStack.Children[2] is Label scannedLabel)
-                            {
-                                if (showScanned && !string.IsNullOrEmpty(scannedText))
-                                {
-                                    scannedLabel.Text = $"✓ QR: {scannedText}";
-                                    scannedLabel.IsVisible = true;
-                                }
-                                else
-                                {
-                                    scannedLabel.IsVisible = false;
-                                }
-                            }
+					_progressLabel.IsVisible = isBusy;
 
-                            // Update error label if it exists
-                            if (statusStack.Children.Count > 3 && statusStack.Children[3] is Label errorLabel)
-                            {
-                                if (statusText.Contains("Error") || statusText.Contains("Failed"))
-                                {
-                                    errorLabel.Text = $"✗ {scannedText}";
-                                    errorLabel.IsVisible = true;
-                                }
-                                else
-                                {
-                                    errorLabel.IsVisible = false;
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"QRScannerPage: Error updating UI: {ex.Message}");
-                }
-            });
-        }
+					_scannedLabel.Text = $"✓ QR: {scannedText}";
+					_scannedLabel.IsVisible = showScanned && !string.IsNullOrEmpty(scannedText);
+
+					_errorLabel.Text = $"✗ {scannedText}";
+					_errorLabel.IsVisible = isError && !string.IsNullOrEmpty(scannedText);
+
+					if (_previewCaptionLabel != null)
+					{
+						_previewCaptionLabel.Text = isPermission
+							? "Camera access is needed to scan. Enable it in Settings."
+							: "Simulated preview. Use Test Scan to simulate scanning a QR code.";
+					}
+				}
+				catch (Exception ex)
+				{
+					System.Diagnostics.Debug.WriteLine($"QRScannerPage: Error updating UI: {ex.Message}");
+				}
+			});
+		}
 
         private async void OnCancelClicked(object? sender, EventArgs e)
         {

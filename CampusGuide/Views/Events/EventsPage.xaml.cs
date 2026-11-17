@@ -16,6 +16,7 @@ namespace CampusGuide.Views.Events
         public EventsPage()
         {
             Title = "Events";
+            BackgroundColor = ThemeHelper.Themed("#F5F7F8", "#121212");
             _viewModel = ServiceHelper.GetService<EventsViewModel>();
             BindingContext = _viewModel;
 
@@ -30,7 +31,7 @@ namespace CampusGuide.Views.Events
                 Command = _viewModel?.RefreshEventsCommand,
                 HorizontalOptions = LayoutOptions.Fill,
                 VerticalOptions = LayoutOptions.Fill,
-                RefreshColor = ThemeHelper.Accent
+                RefreshColor = ThemeHelper.Themed("#087F70", "#4DB6AC")
             };
 
             // Bind IsRefreshing to show loading state during refresh
@@ -53,9 +54,21 @@ namespace CampusGuide.Views.Events
                 Text = "Upcoming Events",
                 FontSize = 24,
                 FontAttributes = FontAttributes.Bold,
-                Margin = new Thickness(20, 15, 20, 10)
+                TextColor = ThemeHelper.Themed("#263238", "#F5F5F5")
             };
-            mainGrid.Add(headerLabel, 0, 0);
+            var subtitleLabel = new Label
+            {
+                Text = "Campus events happening soon",
+                FontSize = 13,
+                TextColor = ThemeHelper.MutedText
+            };
+            var headerStack = new VerticalStackLayout
+            {
+                Spacing = 2,
+                Margin = new Thickness(20, 16, 20, 12),
+                Children = { headerLabel, subtitleLabel }
+            };
+            mainGrid.Add(headerStack, 0, 0);
 
             // Content area (Grid for layering)
             var contentGrid = new Grid
@@ -69,7 +82,7 @@ namespace CampusGuide.Views.Events
             Grid.SetRow(contentGrid, 1);
             mainGrid.Add(contentGrid, 0, 1);
 
-            var loadingView = new StateView(new ActivityIndicator { IsRunning = true, Color = ThemeHelper.Accent, WidthRequest = 36, HeightRequest = 36 }, "Loading events...");
+            var loadingView = new StateView(new ActivityIndicator { IsRunning = true, Color = ThemeHelper.Themed("#087F70", "#4DB6AC"), WidthRequest = 36, HeightRequest = 36 }, "Loading events...");
             loadingView.SetBinding(IsVisibleProperty, new Binding("IsLoading", source: _viewModel));
             contentGrid.Add(loadingView);
 
@@ -141,7 +154,7 @@ namespace CampusGuide.Views.Events
             {
                 Content = monthLabel,
                 StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(4) },
-                BackgroundColor = ThemeHelper.Accent,
+                BackgroundColor = ThemeHelper.Themed("#087F70", "#4DB6AC"),
                 Padding = 0,
                 StrokeThickness = 0
             };
@@ -204,12 +217,12 @@ namespace CampusGuide.Views.Events
                 Margin = new Thickness(0, 8, 0, 0)
             };
 
-            locationStack.Add(IconFactory.Pin(ThemeHelper.Accent, 12));
+            locationStack.Add(IconFactory.Pin(ThemeHelper.Themed("#087F70", "#4DB6AC"), 12));
 
             var locationLabel = new Label
             {
                 FontSize = 12,
-                TextColor = ThemeHelper.Accent
+                TextColor = ThemeHelper.Themed("#087F70", "#4DB6AC")
             };
             locationLabel.SetBinding(Label.TextProperty, new Binding("LocationId", stringFormat: "{0}"));            locationStack.Add(locationLabel);
 
@@ -220,7 +233,7 @@ namespace CampusGuide.Views.Events
             {
                 Content = container,
                 StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(16) },
-                Stroke = ThemeHelper.CardBorder,
+                Stroke = ThemeHelper.Themed("#E2E8F0", "#3A3D42"),
                 StrokeThickness = 1,
                 Padding = 0,
                 Margin = new Thickness(16, 8),

@@ -49,4 +49,42 @@
     <Color x:Key="LabColor">#800080</Color>
     <Color x:Key="AuditoriumColor">#FF0000</Color>
     <Color x:Key="HealthColor">#FFC0CB</Color>
+
+    <Color x:Key="Surface">#FFFFFF</Color>
+    <Color x:Key="SurfaceAlt">#F5F6F8</Color>
+    <Color x:Key="SurfaceDark">#1E2124</Color>
+    <Color x:Key="SurfaceAltDark">#262A2E</Color>
+    <Color x:Key="TextPrimary">#1F1F1F</Color>
+    <Color x:Key="TextPrimaryDark">#F2F2F2</Color>
+    <Color x:Key="TextSecondary">#5F6368</Color>
+    <Color x:Key="TextSecondaryDark">#B0B3B8</Color>
+    <Color x:Key="BorderLight">#E0E0E0</Color>
+    <Color x:Key="BorderDark">#3A3D42</Color>
+    <Color x:Key="Accent">#00695C</Color>
+    <Color x:Key="AccentDark">#4DB6AC</Color>
+    <Color x:Key="Success">#2E7D32</Color>
+    <Color x:Key="Warning">#ED6C02</Color>
+    <Color x:Key="Error">#D32F2F</Color>
+    <Color x:Key="ErrorDark">#FF8A80</Color>
+    <Color x:Key="Info">#0277BD</Color>
+
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource Surface}"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAlt}"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
+    <SolidColorBrush x:Key="BorderLightBrush" Color="{StaticResource BorderLight}"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource Accent}"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource Success}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource Warning}"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource Error}"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource Info}"/>
+
+    <Color x:Key="MapPrimary">#087F70</Color>
+    <Color x:Key="MapPrimaryLight">#E8F5F2</Color>
+    <Color x:Key="MapBackground">#F5F7F8</Color>
+    <Color x:Key="MapCard">#FFFFFF</Color>
+    <Color x:Key="MapTextPrimary">#263238</Color>
+    <Color x:Key="MapTextSecondary">#64748B</Color>
+    <Color x:Key="MapBorder">#E2E8F0</Color>
+    <Color x:Key="MapDisabled">#F1F5F9</Color>
 </ResourceDictionary>
