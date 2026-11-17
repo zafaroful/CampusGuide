@@ -24,7 +24,7 @@ namespace CampusGuide.Services
         /// </summary>
         public void DisplayAlerts(List<NotificationItem> alerts)
         {
-            if (alerts?.Count == 0)
+            if (alerts == null || alerts.Count == 0)
                 return;
 
             // Display alerts one by one on the main thread

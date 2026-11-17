@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.Controls;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CampusGuide.Services;
@@ -36,6 +37,23 @@ namespace CampusGuide.ViewModels
         private string errorMessage = string.Empty;
 
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+
+        [RelayCommand]
+        private async Task LocationTappedAsync(LocationModel? location)
+        {
+            if (location == null)
+                return;
+
+            try
+            {
+                Debug.WriteLine($"FloorPlanViewModel: Tapped location: {location.Name}");
+                await Shell.Current.GoToAsync($"location-details?id={location.Id}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"FloorPlanViewModel: Error navigating to location: {ex.Message}");
+            }
+        }
 
         private readonly FloorPlanService _floorPlanService;
         private List<LocationModel> _allLocations = new List<LocationModel>();

@@ -12,7 +12,7 @@ namespace CampusGuide.Views
 
         private async void OnLicenseClicked(object? sender, EventArgs e)
         {
-            await DisplayAlert("MIT License", 
+            await DisplayAlertAsync("MIT License", 
                 "CampusGuide © 2026\n\n" +
                 "Permission is hereby granted, free of charge, to any person obtaining a copy of this software " +
                 "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, " +
@@ -32,7 +32,7 @@ namespace CampusGuide.Views
             catch (Exception ex)
             {
                 Debug.WriteLine($"AboutPage: Error opening GitHub - {ex.Message}");
-                await DisplayAlert("Error", "Could not open GitHub link. Please visit: https://github.com/zafaroful/CampusGuide", "OK");
+                await DisplayAlertAsync("Error", "Could not open GitHub link. Please visit: https://github.com/zafaroful/CampusGuide", "OK");
             }
         }
 
@@ -54,7 +54,7 @@ namespace CampusGuide.Views
                 }
                 else
                 {
-                    await DisplayAlert("Information", 
+                    await DisplayAlertAsync("Information", 
                         "Email client not configured on this device.\n\n" +
                         "Please send feedback to: feedback@campusguide.dev", 
                         "OK");
@@ -64,7 +64,7 @@ namespace CampusGuide.Views
             catch (Exception ex)
             {
                 Debug.WriteLine($"AboutPage: Error sending feedback - {ex.Message}");
-                await DisplayAlert("Error", "Could not open email client. Please email: feedback@campusguide.dev", "OK");
+                await DisplayAlertAsync("Error", "Could not open email client.", "OK");
             }
         }
     }

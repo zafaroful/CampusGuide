@@ -34,7 +34,7 @@ namespace CampusGuide.ViewModels.Map
 
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
 
-        private readonly IFirestoreService _firestoreService;
+        private readonly IFirestoreService? _firestoreService;
         private readonly ClusteringService _clusteringService;
         private readonly BuildingService _buildingService;
         private bool _dataLoaded = false;

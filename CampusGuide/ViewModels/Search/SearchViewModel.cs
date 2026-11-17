@@ -33,7 +33,7 @@ namespace CampusGuide.ViewModels.Search
 
         public bool ShowEmptyState => !IsLoading && !HasError && !HasResults;
 
-        private readonly IFirestoreService _firestoreService;
+        private readonly IFirestoreService? _firestoreService;
         private bool _dataLoaded = false;
 
         public SearchViewModel()
@@ -108,7 +108,7 @@ namespace CampusGuide.ViewModels.Search
             await LoadLocationsAsync();
         }
 
-        partial void OnSearchQueryChanged(string oldValue, string newValue)
+        partial void OnSearchQueryChanged(string? oldValue, string newValue)
         {
             Debug.WriteLine($"SearchViewModel: SearchQuery changed from '{oldValue}' to '{newValue}'");
             FilterResults(newValue);
@@ -122,7 +122,7 @@ namespace CampusGuide.ViewModels.Search
                 ErrorMessage = string.Empty;
                 Debug.WriteLine("SearchViewModel: Loading locations from Firestore...");
 
-                var locations = await _firestoreService.GetAllLocationsAsync();
+                var locations = _firestoreService == null ? null : await _firestoreService.GetAllLocationsAsync();
 
                 if (locations != null && locations.Count > 0)
                 {

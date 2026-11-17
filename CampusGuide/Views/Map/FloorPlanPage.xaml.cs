@@ -19,9 +19,6 @@ public partial class FloorPlanPage : ContentPage
         // Subscribe to ViewModel property changes
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
-        // Handle location selection from list
-        LocationsCollectionView.SelectionChanged += LocationsCollectionView_SelectionChanged;
-
         // Subscribe to back button - use absolute navigation back to map
         BackButton.Clicked += async (s, e) => 
         {
@@ -36,32 +33,6 @@ public partial class FloorPlanPage : ContentPage
         };
 
         Debug.WriteLine("FloorPlanPage: Initialized");
-    }
-
-    /// <summary>
-    /// Handle location selection from list
-    /// </summary>
-    private async void LocationsCollectionView_SelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (e.CurrentSelection.Count == 0)
-            return;
-
-        try
-        {
-            var selectedLocation = e.CurrentSelection[0] as LocationModel;
-            if (selectedLocation != null)
-            {
-                Debug.WriteLine($"FloorPlanPage: Selected location: {selectedLocation.Name}");
-                await Shell.Current.GoToAsync($"///location-details?id={selectedLocation.Id}");
-
-                // Clear selection for next use
-                LocationsCollectionView.SelectedItem = null;
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"FloorPlanPage: Error navigating to location: {ex.Message}");
-        }
     }
 
     /// <summary>
@@ -354,7 +325,6 @@ public partial class FloorPlanPage : ContentPage
 
         // Unsubscribe from events
         _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
-        LocationsCollectionView.SelectionChanged -= LocationsCollectionView_SelectionChanged;
 
         _viewModel.Clear();
         Debug.WriteLine("FloorPlanPage: Disappeared");

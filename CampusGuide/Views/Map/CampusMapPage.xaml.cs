@@ -260,6 +260,18 @@ namespace CampusGuide.Views.Map
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Never
             };
 
+            var buildingScrollTap = new TapGestureRecognizer();
+            buildingScrollTap.Tapped += (s, e) =>
+            {
+                if (_viewModel != null)
+                {
+                    _viewModel.SelectBuildingCommand.Execute(null);
+                    RefreshMapPins();
+                    UpdateSelectionSummary();
+                }
+            };
+            buildingScrollView.GestureRecognizers.Add(buildingScrollTap);
+
             // Add "All Buildings" button
             var allBuildingsButton = CreateBuildingButton(null);
             buildingScrollLayout.Add(allBuildingsButton);
@@ -785,8 +797,6 @@ namespace CampusGuide.Views.Map
                 _map.IsEnabled = false;
 
                 // Animate zoom with slight fade
-                uint animationDuration = 500; // milliseconds
-
                 // Start zoom animation
                 var zoomTask = MainThread.InvokeOnMainThreadAsync(async () =>
                 {
@@ -900,7 +910,7 @@ namespace CampusGuide.Views.Map
             catch (Exception ex)
             {
                 Debug.WriteLine($"Navigation error: {ex.Message}");
-                await DisplayAlert("Navigation Error", $"Could not navigate to location details: {ex.Message}", "OK");
+                await DisplayAlertAsync("Navigation Error", $"Could not navigate to location details: {ex.Message}", "OK");
             }
         }
 
@@ -969,7 +979,7 @@ namespace CampusGuide.Views.Map
             {
                 if (_viewModel?.SelectedBuilding == null)
                 {
-                    await DisplayAlert("No Building Selected", "Please select a building first to view its floor plans", "OK");
+                    await DisplayAlertAsync("No Building Selected", "Please select a building first to view its floor plans", "OK");
                     return;
                 }
 
@@ -990,7 +1000,7 @@ namespace CampusGuide.Views.Map
             catch (Exception ex)
             {
                 Debug.WriteLine($"Floor plans navigation error: {ex.Message}");
-                await DisplayAlert("Navigation Error", $"Could not open floor plans: {ex.Message}", "OK");
+                await DisplayAlertAsync("Navigation Error", $"Could not open floor plans: {ex.Message}", "OK");
             }
         }
 

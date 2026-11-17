@@ -76,20 +76,20 @@ namespace CampusGuide
 #endif
         }
 
-        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void CurrentDomain_UnhandledException(object? sender, UnhandledExceptionEventArgs e)
         {
-            Exception ex = e.ExceptionObject as Exception;
-            HandleException(ex, "AppDomain");
+            if (e.ExceptionObject is Exception ex)
+                HandleException(ex, "AppDomain");
         }
 
-        private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
         {
             HandleException(e.Exception, "TaskScheduler");
             e.SetObserved();
         }
 
 #if ANDROID
-        private void AndroidEnvironment_UnhandledExceptionRaiser(object sender, Android.Runtime.RaiseThrowableEventArgs e)
+        private void AndroidEnvironment_UnhandledExceptionRaiser(object? sender, Android.Runtime.RaiseThrowableEventArgs e)
         {
             e.Handled = true;
             if (e.Exception != null)
@@ -114,7 +114,7 @@ namespace CampusGuide
                     var window = Application.Current?.Windows.FirstOrDefault();
                     if (window?.Page != null)
                     {
-                        await window.Page.DisplayAlert("Error", 
+                        await window.Page.DisplayAlertAsync("Error", 
                             $"An unexpected error occurred.\n\nDetails: {ex.Message}", 
                             "OK");
                     }

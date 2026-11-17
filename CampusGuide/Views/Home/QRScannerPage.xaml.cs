@@ -319,11 +319,11 @@ namespace CampusGuide.Views.Home
                 // Request camera permission
                 var granted = await PermissionHelper.EnsureCameraPermissionAsync().ConfigureAwait(false);
 
-                MainThread.BeginInvokeOnMainThread(() =>
+                MainThread.BeginInvokeOnMainThread(async () =>
                 {
                     if (!granted)
                     {
-                        DisplayAlert("Permission Denied", "Camera permission is required to scan QR codes.", "OK");
+                        await DisplayAlertAsync("Permission Denied", "Camera permission is required to scan QR codes.", "OK");
                     }
                     else
                     {
@@ -335,7 +335,7 @@ namespace CampusGuide.Views.Home
             {
                 MainThread.BeginInvokeOnMainThread(async () =>
                 {
-                    await DisplayAlert("Error", $"Failed to request camera permission: {ex.Message}", "OK");
+                    await DisplayAlertAsync("Error", $"Failed to request camera permission: {ex.Message}", "OK");
                     System.Diagnostics.Debug.WriteLine($"QRScannerPage: Permission error: {ex.Message}");
                 });
             }
@@ -352,7 +352,7 @@ namespace CampusGuide.Views.Home
         {
             if (_isProcessing)
             {
-                await DisplayAlert("Processing", "Please wait while the previous scan is being processed.", "OK");
+                await DisplayAlertAsync("Processing", "Please wait while the previous scan is being processed.", "OK");
                 return;
             }
 
@@ -391,7 +391,7 @@ namespace CampusGuide.Views.Home
                     {
                         System.Diagnostics.Debug.WriteLine($"QRScannerPage: Error in test scan: {ex.Message}");
                         UpdateUI("Scan failed", ex.Message, false);
-                        await DisplayAlert("Error", $"Test scan failed: {ex.Message}", "OK");
+                        await DisplayAlertAsync("Error", $"Test scan failed: {ex.Message}", "OK");
                     }
                     finally
                     {
@@ -403,7 +403,7 @@ namespace CampusGuide.Views.Home
             {
                 _isProcessing = false;
                 System.Diagnostics.Debug.WriteLine($"QRScannerPage: Test scan exception: {ex.Message}");
-                await DisplayAlert("Error", $"Test scan failed: {ex.Message}", "OK");
+                await DisplayAlertAsync("Error", $"Test scan failed: {ex.Message}", "OK");
             }
         }
 
@@ -411,7 +411,7 @@ namespace CampusGuide.Views.Home
         {
             if (_isProcessing)
             {
-                await DisplayAlert("Processing", "Please wait while the previous scan is being processed.", "OK");
+                await DisplayAlertAsync("Processing", "Please wait while the previous scan is being processed.", "OK");
                 return;
             }
 
@@ -440,7 +440,7 @@ namespace CampusGuide.Views.Home
                 if (string.IsNullOrEmpty(qrValue))
                 {
                     UpdateUI("No QR code found", "", false);
-                    await DisplayAlert("No QR Code", "No QR code was found in the selected image.", "OK");
+                    await DisplayAlertAsync("No QR Code", "No QR code was found in the selected image.", "OK");
                     UpdateUI("Ready to scan QR codes", "", false);
                     return;
                 }
@@ -449,7 +449,7 @@ namespace CampusGuide.Views.Home
                 if (string.IsNullOrEmpty(locationId))
                 {
                     UpdateUI("Invalid QR code", "Could not extract location ID", false);
-                    await DisplayAlert("Invalid QR Code", "Could not extract location ID from QR code.\n\nFormat should be: campus://location/LOCATION_ID", "OK");
+                    await DisplayAlertAsync("Invalid QR Code", "Could not extract location ID from QR code.\n\nFormat should be: campus://location/LOCATION_ID", "OK");
                     UpdateUI("Ready to scan QR codes", "", false);
                     return;
                 }
@@ -463,7 +463,7 @@ namespace CampusGuide.Views.Home
                 if (location == null)
                 {
                     UpdateUI("Location not found", locationId, false);
-                    await DisplayAlert("Location Not Found", $"No location found for QR code: {locationId}", "OK");
+                    await DisplayAlertAsync("Location Not Found", $"No location found for QR code: {locationId}", "OK");
                     UpdateUI("Ready to scan QR codes", "", false);
                     return;
                 }
@@ -475,7 +475,7 @@ namespace CampusGuide.Views.Home
             {
                 System.Diagnostics.Debug.WriteLine($"QRScannerPage: Gallery scan error: {ex.Message}");
                 UpdateUI("Error processing image", ex.Message, false);
-                await DisplayAlert("Error", $"Failed to scan image: {ex.Message}", "OK");
+                await DisplayAlertAsync("Error", $"Failed to scan image: {ex.Message}", "OK");
                 UpdateUI("Ready to scan QR codes", "", false);
             }
             finally
@@ -518,7 +518,7 @@ namespace CampusGuide.Views.Home
                     MainThread.BeginInvokeOnMainThread(async () =>
                     {
                         UpdateUI("Invalid QR code", "Could not extract location ID", false);
-                        await DisplayAlert("Invalid QR Code", "Could not extract location ID from QR code.\n\nFormat should be: campus://location/LOCATION_ID", "OK");
+                        await DisplayAlertAsync("Invalid QR Code", "Could not extract location ID from QR code.\n\nFormat should be: campus://location/LOCATION_ID", "OK");
                         UpdateUI("Ready to scan QR codes", "", false);
                     });
                     return;
@@ -546,7 +546,7 @@ namespace CampusGuide.Views.Home
                             {
                                 System.Diagnostics.Debug.WriteLine($"QRScannerPage: Navigation error: {navEx.Message}");
                                 UpdateUI("Navigation failed", navEx.Message, false);
-                                await DisplayAlert("Navigation Error", $"Failed to open location: {navEx.Message}", "OK");
+                                await DisplayAlertAsync("Navigation Error", $"Failed to open location: {navEx.Message}", "OK");
                                 UpdateUI("Ready to scan QR codes", "", false);
                             }
                         });
@@ -558,7 +558,7 @@ namespace CampusGuide.Views.Home
 
                         MainThread.BeginInvokeOnMainThread(async () =>
                         {
-                            var action = await DisplayAlert(
+                            var action = await DisplayAlertAsync(
                                 "Location Not Found",
                                 $"No location found for QR code: {locationId}\n\nTry scanning another QR code.",
                                 "Try Again",
@@ -579,7 +579,7 @@ namespace CampusGuide.Views.Home
                     MainThread.BeginInvokeOnMainThread(async () =>
                     {
                         UpdateUI("Service unavailable", "Firestore service not configured", false);
-                        await DisplayAlert("Error", "Firestore service is not available.", "OK");
+                        await DisplayAlertAsync("Error", "Firestore service is not available.", "OK");
                         UpdateUI("Ready to scan QR codes", "", false);
                     });
                 }
@@ -591,7 +591,7 @@ namespace CampusGuide.Views.Home
 
                 MainThread.BeginInvokeOnMainThread(async () =>
                 {
-                    await DisplayAlert("Error", $"Failed to process QR code: {ex.Message}", "OK");
+                    await DisplayAlertAsync("Error", $"Failed to process QR code: {ex.Message}", "OK");
                     UpdateUI("Ready to scan QR codes", "", false);
                 });
             }
@@ -694,7 +694,7 @@ namespace CampusGuide.Views.Home
             {
                 MainThread.BeginInvokeOnMainThread(async () =>
                 {
-                    await DisplayAlert("Navigation Error", $"Failed to go back: {ex.Message}", "OK");
+                    await DisplayAlertAsync("Navigation Error", $"Failed to go back: {ex.Message}", "OK");
                 });
             }
         }

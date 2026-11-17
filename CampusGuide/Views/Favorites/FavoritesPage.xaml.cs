@@ -202,7 +202,7 @@ namespace CampusGuide.Views.Favorites
                 FontAttributes = FontAttributes.Bold,
                 LineBreakMode = LineBreakMode.WordWrap,
                 VerticalOptions = LayoutOptions.Center,
-                HorizontalOptions = LayoutOptions.FillAndExpand,
+                HorizontalOptions = LayoutOptions.Fill,
                 TextColor = Themed("#333333", "#F1F1F1")
             };
             nameLabel.SetBinding(Label.TextProperty, "Name");

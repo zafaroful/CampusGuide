@@ -201,7 +201,7 @@ namespace CampusGuide.Views.Notifications
                 LineBreakMode = LineBreakMode.WordWrap,
                 VerticalOptions = LayoutOptions.Center,
                 VerticalTextAlignment = TextAlignment.Center,
-                HorizontalOptions = LayoutOptions.FillAndExpand
+                HorizontalOptions = LayoutOptions.Fill
             };
             titleLabel.SetBinding(Label.TextProperty, "Title");
             headerStack.Add(titleLabel);
@@ -263,7 +263,7 @@ namespace CampusGuide.Views.Notifications
             footerStack.Add(new BoxView
             {
                 Color = Colors.Transparent,
-                HorizontalOptions = LayoutOptions.FillAndExpand
+                HorizontalOptions = LayoutOptions.Fill
             });
 
             // Icon or indicator (optional)

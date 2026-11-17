@@ -358,7 +358,7 @@ namespace CampusGuide.Services
                 Floor = GetString(fields, "floor") ?? string.Empty,
                 Building = GetString(fields, "building") ?? string.Empty,
                 QrCodeId = GetString(fields, "qrCodeId") ?? string.Empty,
-                Coordinates = GetCoordinates(fields),
+                Coordinates = GetCoordinates(fields) ?? new Coordinates(),
                 Images = GetStringArray(fields, "images"),
                 Tags = GetStringArray(fields, "tags"),
             };
@@ -377,7 +377,7 @@ namespace CampusGuide.Services
                 IsPublished = GetBool(fields, "isPublished"),
                 StartTime = GetTimestamp(fields, "startTime") ?? default,
                 EndTime = GetTimestamp(fields, "endTime") ?? default,
-                Coordinates = GetCoordinates(fields),
+                Coordinates = GetCoordinates(fields) ?? new Coordinates(),
             };
         }
 

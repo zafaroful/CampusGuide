@@ -12,7 +12,7 @@ namespace CampusGuide
     {
         const string TAG = "MainActivity";
 
-        protected override void OnCreate(Bundle savedInstanceState)
+        protected override void OnCreate(Bundle? savedInstanceState)
         {
             try
             {

@@ -133,8 +133,8 @@ namespace CampusGuide.Views.Home
             var tap = new TapGestureRecognizer { Command = command };
             tap.Tapped += async (s, e) =>
             {
-                await Task.WhenAll(card.FadeTo(0.85, 80), card.ScaleTo(0.97, 80));
-                await Task.WhenAll(card.FadeTo(1, 120), card.ScaleTo(1, 120));
+                await Task.WhenAll(card.FadeToAsync(0.85, 80), card.ScaleToAsync(0.97, 80));
+                await Task.WhenAll(card.FadeToAsync(1, 120), card.ScaleToAsync(1, 120));
             };
             card.GestureRecognizers.Add(tap);
             return card;
