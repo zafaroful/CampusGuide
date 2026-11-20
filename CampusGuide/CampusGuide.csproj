@@ -32,7 +32,6 @@
 		   <MauiXaml Update="MyPage.xaml" Inflator="Runtime" /> (force runtime inflation)
 		 Currently disabled due to source-generation issues with newly created XAML files.
 		 <MauiXamlInflator>SourceGen</MauiXamlInflator> -->
-		<MauiXamlInflator>Runtime</MauiXamlInflator>
 
 		<!-- Display name -->
 		<ApplicationTitle>CampusGuide</ApplicationTitle>

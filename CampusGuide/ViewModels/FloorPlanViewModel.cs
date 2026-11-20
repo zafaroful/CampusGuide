@@ -11,30 +11,67 @@ namespace CampusGuide.ViewModels
 {
     public partial class FloorPlanViewModel : ObservableObject
     {
-        [ObservableProperty]
-        private string selectedBuildingName = string.Empty;
+        private string _selectedBuildingName = string.Empty;
+        public string SelectedBuildingName
+        {
+            get => _selectedBuildingName;
+            set => SetProperty(ref _selectedBuildingName, value);
+        }
 
-        [ObservableProperty]
-        private string selectedFloorLevel = string.Empty;
+        private string _selectedFloorLevel = string.Empty;
+        public string SelectedFloorLevel
+        {
+            get => _selectedFloorLevel;
+            set => SetProperty(ref _selectedFloorLevel, value);
+        }
 
-        [ObservableProperty]
-        private ObservableCollection<FloorPlan> availableFloorPlans = new();
+        private ObservableCollection<FloorPlan> _availableFloorPlans = new();
+        public ObservableCollection<FloorPlan> AvailableFloorPlans
+        {
+            get => _availableFloorPlans;
+            set => SetProperty(ref _availableFloorPlans, value);
+        }
 
-        [ObservableProperty]
-        private FloorPlan? currentFloorPlan = null;
+        private FloorPlan? _currentFloorPlan = null;
+        public FloorPlan? CurrentFloorPlan
+        {
+            get => _currentFloorPlan;
+            set => SetProperty(ref _currentFloorPlan, value);
+        }
 
-        [ObservableProperty]
-        private ObservableCollection<LocationModel> locationsOnFloor = new();
+        private ObservableCollection<LocationModel> _locationsOnFloor = new();
+        public ObservableCollection<LocationModel> LocationsOnFloor
+        {
+            get => _locationsOnFloor;
+            set => SetProperty(ref _locationsOnFloor, value);
+        }
 
-        [ObservableProperty]
-        private bool isLoading = false;
+        private bool _isLoading = false;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
 
-        [ObservableProperty]
-        private bool floorPlanAvailable = false;
+        private bool _floorPlanAvailable = false;
+        public bool FloorPlanAvailable
+        {
+            get => _floorPlanAvailable;
+            set => SetProperty(ref _floorPlanAvailable, value);
+        }
 
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(HasError))]
-        private string errorMessage = string.Empty;
+        private string _errorMessage = string.Empty;
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set
+            {
+                if (SetProperty(ref _errorMessage, value))
+                {
+                    OnPropertyChanged(nameof(HasError));
+                }
+            }
+        }
 
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
 
