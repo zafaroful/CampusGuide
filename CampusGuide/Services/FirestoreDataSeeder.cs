@@ -74,12 +74,16 @@ namespace CampusGuide.Services
                 Log.Debug(TAG, "✅ Firestore seeding completed successfully!");
 #endif
             }
+            #if ANDROID
             catch (Exception ex)
             {
-#if ANDROID
                 Log.Error(TAG, $"Error seeding Firestore: {ex.Message}");
-#endif
             }
+#else
+            catch (Exception)
+            {
+            }
+#endif
         }
 
         private async Task SeedLocationsAsync()
